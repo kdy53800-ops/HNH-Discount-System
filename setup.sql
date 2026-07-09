@@ -66,7 +66,7 @@ CREATE TABLE discount_requests (
     ip_address text, -- 신청 시점 IP
     discount_amount numeric DEFAULT 0, -- 감면금액 (원무팀 입력)
     admin_notes text, -- 원무팀 확인 메모
-    status text NOT NULL DEFAULT '신청완료' CHECK (status IN ('신청완료', '원무확인중', '보완요청', '담당자 승인', '최종승인', '반려', '거절')),
+    status text NOT NULL DEFAULT '신청완료' CHECK (status IN ('신청완료', '원무확인중', '재확인 필요', '보완요청', '담당자 승인', '최종승인', '반려', '거절')),
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );

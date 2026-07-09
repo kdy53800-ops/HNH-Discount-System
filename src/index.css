@@ -673,6 +673,9 @@ body {
 .status-badge.status-원무확인중 { background: rgba(37, 99, 235, 0.1); color: #2563eb; border: 1px solid rgba(37, 99, 235, 0.25); }
 .status-badge.status-원무확인중::before { background: #2563eb; }
 
+.status-badge.status-재확인-필요 { background: rgba(249, 115, 22, 0.1); color: #f97316; border: 1px solid rgba(249, 115, 22, 0.25); }
+.status-badge.status-재확인-필요::before { background: #f97316; }
+
 .status-badge.status-보완요청 { background: rgba(219, 39, 119, 0.1); color: #db2777; border: 1px solid rgba(219, 39, 119, 0.25); }
 .status-badge.status-보완요청::before { background: #db2777; }
 

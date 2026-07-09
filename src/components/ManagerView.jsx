@@ -120,7 +120,7 @@ export default function ManagerView({ currentUser }) {
       if (item.status === '최종승인') {
         approvedCnt++;
         approvedAmt += amount;
-      } else if (item.status === '신청완료' || item.status === '원무확인중' || item.status === '담당자 승인') {
+      } else if (item.status === '신청완료' || item.status === '원무확인중' || item.status === '담당자 승인' || item.status === '재확인 필요') {
         pendingCnt++;
       }
 
@@ -198,7 +198,7 @@ export default function ManagerView({ currentUser }) {
     if (!selectedReq) return;
 
     let actionReason = '';
-    if (targetStatus === '반려' || targetStatus === '원무확인중') {
+    if (targetStatus === '반려' || targetStatus === '원무확인중' || targetStatus === '재확인 필요') {
       const promptMsg = targetStatus === '반려' 
         ? '반려 사유를 입력해주세요. (입력된 사유는 원무팀 메모에 추가됩니다)' 
         : '취소/재확인 요청 사유를 입력해주세요. (입력된 사유는 원무팀 메모에 추가됩니다)';
@@ -229,7 +229,7 @@ export default function ManagerView({ currentUser }) {
       let updatedNotes = selectedReq.admin_notes || '';
       if (actionReason) {
         const timestamp = new Date().toLocaleString('ko-KR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const prefix = targetStatus === '반려' ? '[반려 사유]' : '[결재취소 사유]';
+        const prefix = targetStatus === '반려' ? '[반려 사유]' : targetStatus === '재확인 필요' ? '[재확인 요청 사유]' : '[결재취소 사유]';
         updatedNotes = updatedNotes ? `${updatedNotes}\n\n${prefix} ${timestamp} - ${userName}:\n${actionReason}` : `${prefix} ${timestamp} - ${userName}:\n${actionReason}`;
       }
 
@@ -591,6 +591,7 @@ export default function ManagerView({ currentUser }) {
                         <option value="">전체 상태</option>
                         <option value="신청완료">신청완료</option>
                         <option value="원무확인중">원무확인중</option>
+                        <option value="재확인 필요">재확인 필요</option>
                         <option value="보완요청">보완요청</option>
                         <option value="담당자 승인">담당자 승인 (결재 대기)</option>
                         <option value="최종승인">최종승인</option>
@@ -846,7 +847,7 @@ export default function ManagerView({ currentUser }) {
               {/* 결재 대기 중(담당자 승인) 상태일 때만 승인/반려 노출 */}
               {selectedReq.status === '담당자 승인' && (
                 <>
-                  <button onClick={() => handleUpdateStatus('원무확인중')} className="btn btn-danger">반려 (원무팀 반송)</button>
+                  <button onClick={() => handleUpdateStatus('재확인 필요')} className="btn btn-danger">반려 (재확인 필요)</button>
                   <button onClick={() => handleUpdateStatus('최종승인')} className="btn btn-primary">최종 승인</button>
                 </>
               )}

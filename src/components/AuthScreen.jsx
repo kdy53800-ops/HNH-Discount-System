@@ -111,29 +111,7 @@ export default function AuthScreen({ onSessionRefresh }) {
                 <span className="user-role-badge admin">원무팀</span>
               </button>
 
-              <button 
-                onClick={() => handleMockLogin('manager@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">원무팀장 (박팀장 - 원무팀)</span>
-                  <span className="mock-account-email">manager@hospital.com</span>
-                </div>
-                <span className="user-role-badge manager">원무팀장</span>
-              </button>
 
-              <button 
-                onClick={() => handleMockLogin('sysadmin@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">시스템 관리자 (이관리 - 정보의학실)</span>
-                  <span className="mock-account-email">sysadmin@hospital.com</span>
-                </div>
-                <span className="user-role-badge sysadmin">관리자</span>
-              </button>
             </div>
           </>
         )}
