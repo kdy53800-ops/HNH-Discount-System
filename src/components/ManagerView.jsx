@@ -846,7 +846,7 @@ export default function ManagerView({ currentUser }) {
               {/* 결재 대기 중(담당자 승인) 상태일 때만 승인/반려 노출 */}
               {selectedReq.status === '담당자 승인' && (
                 <>
-                  <button onClick={() => handleUpdateStatus('반려')} className="btn btn-danger">반려 처리</button>
+                  <button onClick={() => handleUpdateStatus('원무확인중')} className="btn btn-danger">반려 (원무팀 반송)</button>
                   <button onClick={() => handleUpdateStatus('최종승인')} className="btn btn-primary">최종 승인</button>
                 </>
               )}

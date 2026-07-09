@@ -7,9 +7,7 @@ export default function RoleSimulator({ currentUser, onSessionRefresh }) {
 
   const roles = [
     { name: '신청자', email: 'applicant@hospital.com', roleKey: 'applicant' },
-    { name: '원무팀', email: 'staff@hospital.com', roleKey: 'admin' },
-    { name: '원무팀장', email: 'manager@hospital.com', roleKey: 'manager' },
-    { name: '관리자', email: 'sysadmin@hospital.com', roleKey: 'sysadmin' }
+    { name: '원무팀', email: 'staff@hospital.com', roleKey: 'admin' }
   ];
 
   const handleRoleSwitch = async (email) => {
