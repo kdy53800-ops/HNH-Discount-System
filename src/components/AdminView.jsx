@@ -452,7 +452,6 @@ export default function AdminView({ currentUser }) {
                       <option value="">전체 상태</option>
                       <option value="신청완료">신청완료</option>
                       <option value="원무확인중">원무확인중</option>
-                      <option value="재확인 필요">재확인 필요</option>
                       <option value="보완요청">보완요청</option>
                       <option value="담당자 승인">담당자 승인 (결재 대기)</option>
                       <option value="최종승인">최종승인</option>
