@@ -49,7 +49,7 @@ export default function AuthScreen({ onSessionRefresh }) {
     <div className="login-wrapper">
       <div className="glass-card login-card">
         <div className="login-icon" style={{ background: 'transparent', boxShadow: 'none' }}>
-          <img src="/favicon.svg" alt="Logo" style={{ width: '64px', height: '64px' }} />
+          <img src="/logo.png" alt="Logo" style={{ width: '64px', height: '64px', objectFit: 'contain' }} />
         </div>
         <h1 className="login-title">진료비 감면 관리</h1>
         <p className="login-desc">종이 감면 신청서를 쉽고 간편하게 온라인으로 접수하고 결재 현황을 확인하세요.</p>
