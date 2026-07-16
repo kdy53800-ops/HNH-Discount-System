@@ -169,7 +169,7 @@ export default function App() {
       <header className="app-header">
         <div className="header-top-row">
           <div className="brand" style={{ alignSelf: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src="/favicon.svg" alt="Logo" style={{ height: '32px' }} />
+            <img src="/logo.png" alt="Logo" style={{ height: '32px' }} />
             <span className="brand-logo">진료비 감면 관리</span>
             <span className="brand-badge">v1.0 {isMock && 'MOCK-DB'}</span>
           </div>
