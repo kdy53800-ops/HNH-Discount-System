@@ -152,7 +152,7 @@ export default function FilterSettings() {
   const currentCategoryName = categories.find(c => c.id === activeCategory)?.name;
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '24px' }}>
+    <div className="filter-settings-grid">
       
       {/* 좌측 카테고리 메뉴 */}
       <div className="glass-card" style={{ height: 'fit-content', padding: '20px' }}>
@@ -189,8 +189,8 @@ export default function FilterSettings() {
           <h2 className="log-section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>
             [{currentCategoryName}] 항목 추가
           </h2>
-          <form onSubmit={handleAddOption} style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
-            <div className="form-group" style={{ flex: 1 }}>
+          <form onSubmit={handleAddOption} className="filter-form-row">
+            <div className="form-group">
               <label className="form-label required">항목 표시 이름</label>
               <input 
                 type="text" 
@@ -201,7 +201,7 @@ export default function FilterSettings() {
                 required 
               />
             </div>
-            <div className="form-group" style={{ flex: 1 }}>
+            <div className="form-group">
               <label className="form-label">고유 코드 (선택)</label>
               <input 
                 type="text" 
@@ -211,7 +211,7 @@ export default function FilterSettings() {
                 className="form-input"
               />
             </div>
-            <div className="form-group" style={{ width: '100px' }}>
+            <div className="form-group" style={{ flex: '0 0 100px' }}>
               <label className="form-label">정렬 순서</label>
               <input 
                 type="number" 
@@ -221,8 +221,8 @@ export default function FilterSettings() {
                 className="form-input"
               />
             </div>
-            <div className="form-group" style={{ marginBottom: '4px' }}>
-              <button type="submit" disabled={submitLoading} className="btn btn-primary">
+            <div className="form-group" style={{ marginBottom: '4px', flex: '0 0 auto' }}>
+              <button type="submit" disabled={submitLoading} className="btn btn-primary" style={{ width: '100%' }}>
                 {submitLoading ? '추가 중...' : '추가하기'}
               </button>
             </div>
