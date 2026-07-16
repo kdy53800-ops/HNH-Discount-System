@@ -230,7 +230,7 @@ export default function FilterSettings() {
         </div>
 
         {/* 목록 테이블 */}
-        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
           <h2 className="log-section-title" style={{ fontSize: '16px', marginBottom: '16px' }}>
             [{currentCategoryName}] 등록된 옵션 ({options.length}개)
           </h2>
@@ -241,7 +241,7 @@ export default function FilterSettings() {
             <div className="empty-state">등록된 항목이 없습니다.</div>
           ) : (
             <div className="table-responsive" style={{ maxHeight: '400px' }}>
-              <table className="custom-table">
+              <table className="custom-table compact">
                 <thead>
                   <tr>
                     <th>항목 표시 이름 (Value)</th>
