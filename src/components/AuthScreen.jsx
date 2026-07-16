@@ -48,10 +48,8 @@ export default function AuthScreen({ onSessionRefresh }) {
   return (
     <div className="login-wrapper">
       <div className="glass-card login-card">
-        <div className="login-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{color: '#fff'}}>
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-          </svg>
+        <div className="login-icon" style={{ background: 'transparent', boxShadow: 'none' }}>
+          <img src="/favicon.svg" alt="Logo" style={{ width: '64px', height: '64px' }} />
         </div>
         <h1 className="login-title">진료비 감면 관리</h1>
         <p className="login-desc">종이 감면 신청서를 쉽고 간편하게 온라인으로 접수하고 결재 현황을 확인하세요.</p>
@@ -112,6 +110,29 @@ export default function AuthScreen({ onSessionRefresh }) {
               </button>
 
 
+              <button 
+                onClick={() => handleMockLogin('manager@hospital.com')} 
+                disabled={loading}
+                className="mock-account-btn"
+              >
+                <div className="mock-account-info">
+                  <span className="mock-account-name">원무팀장 (박팀장 - 원무팀)</span>
+                  <span className="mock-account-email">manager@hospital.com</span>
+                </div>
+                <span className="user-role-badge manager">원무팀장</span>
+              </button>
+
+              <button 
+                onClick={() => handleMockLogin('sysadmin@hospital.com')} 
+                disabled={loading}
+                className="mock-account-btn"
+              >
+                <div className="mock-account-info">
+                  <span className="mock-account-name">시스템 관리자 (이관리 - 전산팀)</span>
+                  <span className="mock-account-email">sysadmin@hospital.com</span>
+                </div>
+                <span className="user-role-badge sysadmin">관리자</span>
+              </button>
             </div>
           </>
         )}
