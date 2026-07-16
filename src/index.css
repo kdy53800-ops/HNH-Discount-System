@@ -1261,13 +1261,14 @@ body {
     display: none;
     flex-direction: column;
     width: 100%;
+    height: calc(100vh - 56px);
     background: #ffffff;
     padding: 16px;
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
     position: absolute;
     top: 56px;
     left: 0;
     z-index: 99;
+    overflow-y: auto;
   }
 
   .header-nav-container.open {
@@ -1427,5 +1428,14 @@ body {
   }
   .filter-form-row .btn {
     width: 100%;
+  }
+  .role-simulator-panel {
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 8px;
+    border-radius: 12px;
   }
 }
