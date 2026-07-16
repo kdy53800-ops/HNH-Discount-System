@@ -569,7 +569,12 @@ const SEED_CODE_OPTIONS = [
   { id: 7, category: 'discount_reason', code: 'complaint', value: '민원', sort_order: 3 },
   { id: 8, category: 'discount_reason', code: 'social', value: '사회사업', sort_order: 4 },
   { id: 9, category: 'discount_reason', code: 'liability', value: '병원 귀책', sort_order: 5 },
-  { id: 10, category: 'discount_reason', code: 'other', value: '기타 (상세내용 기재 필수)', sort_order: 6 }
+  { id: 10, category: 'discount_reason', code: 'other', value: '기타 (상세내용 기재 필수)', sort_order: 6 },
+  { id: 11, category: 'relationship', code: 'none', value: '기타 (관계없음-감면등록용)', sort_order: 1 },
+  { id: 12, category: 'relationship', code: 'self_spouse', value: '본인/배우자', sort_order: 2 },
+  { id: 13, category: 'relationship', code: 'direct', value: '직계 (자녀,부모(본인 또는 배우자의))', sort_order: 3 },
+  { id: 14, category: 'relationship', code: 'collateral', value: '방계 (본인 또는 배우자의)', sort_order: 4 },
+  { id: 15, category: 'relationship', code: 'acquaintance', value: '친인척/지인', sort_order: 5 }
 ];
 
 const SEED_USERS = [
@@ -584,8 +589,11 @@ function initMockDB() {
   // 이전 세션의 캐시된 구버전 데이터가 존재할 경우 자동 갱신 조치
   try {
     const storedCodes = safeGetItem(MOCK_STORAGE_KEYS.code_options);
-    if (storedCodes && JSON.parse(storedCodes).some(item => item.value === '본인(직원) 감면' || item.value === '감면규정')) {
-      safeSetItem(MOCK_STORAGE_KEYS.code_options, JSON.stringify(SEED_CODE_OPTIONS));
+    if (storedCodes) {
+      const parsed = JSON.parse(storedCodes);
+      if (parsed.some(item => item.value === '본인(직원) 감면' || item.value === '감면규정') || !parsed.some(item => item.category === 'relationship')) {
+        safeSetItem(MOCK_STORAGE_KEYS.code_options, JSON.stringify(SEED_CODE_OPTIONS));
+      }
     }
   } catch (e) {}
 

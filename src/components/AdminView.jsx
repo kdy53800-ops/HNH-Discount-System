@@ -21,6 +21,8 @@ export default function AdminView({ currentUser }) {
   const [filterApplicantDept, setFilterApplicantDept] = useState(''); // 신청자 소속
   const [filterApplicant, setFilterApplicant] = useState('');  // 신청자 이름
   const [reasons, setReasons] = useState([]);                  // 감면 사유 목록 (DB)
+  const [relationships, setRelationships] = useState([]);      // 신청자와의 관계 목록 (DB)
+  const [discountTypes, setDiscountTypes] = useState([]);      // 감면구분 목록 (DB)
 
   // 필터 패널 열림 상태
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
@@ -60,13 +62,16 @@ export default function AdminView({ currentUser }) {
         );
         setDepartments(sortedDepts);
       }
-      // 감면 사유 목록 (ApplicantView와 동일)
+      // 코드 옵션 목록 전체 조회 후 필터링
       const { data: codeData } = await supabase
         .from('code_options')
-        .select('value')
-        .eq('category', 'discount_reason')
+        .select('category, value')
         .order('sort_order');
-      if (codeData) setReasons(codeData);
+      if (codeData) {
+        setReasons(codeData.filter(c => c.category === 'discount_reason'));
+        setRelationships(codeData.filter(c => c.category === 'relationship'));
+        setDiscountTypes(codeData.filter(c => c.category === 'discount_type'));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -398,10 +403,9 @@ export default function AdminView({ currentUser }) {
                     <label className="form-label">감면구분</label>
                     <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="form-select">
                       <option value="">전체</option>
-                      <option value="외래">외래</option>
-                      <option value="입원">입원</option>
-                      <option value="검진">검진</option>
-                      <option value="기타">기타</option>
+                      {discountTypes.map(t => (
+                        <option key={t.value} value={t.value}>{t.value}</option>
+                      ))}
                     </select>
                   </div>
                   <div className="form-group">
@@ -432,11 +436,9 @@ export default function AdminView({ currentUser }) {
                     <label className="form-label">신청자와의 관계</label>
                     <select value={filterRelationship} onChange={(e) => setFilterRelationship(e.target.value)} className="form-select">
                       <option value="">전체</option>
-                      <option value="기타 (관계없음-감면등록용)">기타 (관계없음-감면등록용)</option>
-                      <option value="본인/배우자">본인/배우자</option>
-                      <option value="직계 (자녀,부모(본인 또는 배우자의))">직계 (자녀,부모(본인 또는 배우자의))</option>
-                      <option value="방계 (본인 또는 배우자의)">방계 (본인 또는 배우자의)</option>
-                      <option value="친인척/지인">친인척/지인</option>
+                      {relationships.map(r => (
+                        <option key={r.value} value={r.value}>{r.value}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

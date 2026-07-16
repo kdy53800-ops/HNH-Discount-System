@@ -16,6 +16,8 @@ export default function ApplicantView({ currentUser }) {
   // 마스터 데이터 상태
   const [departments, setDepartments] = useState([]);
   const [reasons, setReasons] = useState([]);
+  const [relationships, setRelationships] = useState([]);
+  const [discountTypes, setDiscountTypes] = useState([]);
   const [requestList, setRequestList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -53,15 +55,23 @@ export default function ApplicantView({ currentUser }) {
         if (sortedDepts.length > 0) setClinicDept(sortedDepts[0].name);
       }
 
-      // 사유 목록
+      // 코드 옵션 목록 전체 조회 후 필터링
       const { data: codeData } = await supabase
         .from('code_options')
-        .select('value')
-        .eq('category', 'discount_reason')
+        .select('category, value')
         .order('sort_order');
       if (codeData) {
-        setReasons(codeData);
-        if (codeData.length > 0) setReasonCategory(codeData[0].value);
+        const reasonOptions = codeData.filter(c => c.category === 'discount_reason');
+        setReasons(reasonOptions);
+        if (reasonOptions.length > 0 && reasonCategory === '감면규정등록') setReasonCategory(reasonOptions[0].value);
+
+        const relationOptions = codeData.filter(c => c.category === 'relationship');
+        setRelationships(relationOptions);
+        if (relationOptions.length > 0 && relationship === '기타 (관계없음-감면등록용)') setRelationship(relationOptions[0].value);
+
+        const typeOptions = codeData.filter(c => c.category === 'discount_type');
+        setDiscountTypes(typeOptions);
+        if (typeOptions.length > 0 && discountType === '외래') setDiscountType(typeOptions[0].value);
       }
     } catch (err) {
       console.error('마스터 데이터 로드 중 오류:', err);
@@ -269,10 +279,9 @@ export default function ApplicantView({ currentUser }) {
               onChange={(e) => setDiscountType(e.target.value)}
               className="form-select"
             >
-              <option value="외래">외래</option>
-              <option value="입원">입원</option>
-              <option value="검진">검진</option>
-              <option value="기타">기타</option>
+              {discountTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.value}</option>
+              ))}
             </select>
           </div>
 
@@ -325,11 +334,9 @@ export default function ApplicantView({ currentUser }) {
               onChange={(e) => setRelationship(e.target.value)}
               className="form-select"
             >
-              <option value="기타 (관계없음-감면등록용)">기타 (관계없음-감면등록용)</option>
-              <option value="본인/배우자">본인/배우자</option>
-              <option value="직계 (자녀,부모(본인 또는 배우자의))">직계 (자녀,부모(본인 또는 배우자의))</option>
-              <option value="방계 (본인 또는 배우자의)">방계 (본인 또는 배우자의)</option>
-              <option value="친인척/지인">친인척/지인</option>
+              {relationships.map(r => (
+                <option key={r.value} value={r.value}>{r.value}</option>
+              ))}
             </select>
           </div>
 
@@ -549,11 +556,9 @@ export default function ApplicantView({ currentUser }) {
                     className="form-select"
                     required
                   >
-                    <option value="기타 (관계없음-감면등록용)">기타 (관계없음-감면등록용)</option>
-                    <option value="본인/배우자">본인/배우자</option>
-                    <option value="직계 (자녀,부모(본인 또는 배우자의))">직계 (자녀,부모(본인 또는 배우자의))</option>
-                    <option value="방계 (본인 또는 배우자의)">방계 (본인 또는 배우자의)</option>
-                    <option value="친인척/지인">친인척/지인</option>
+                    {relationships.map(r => (
+                      <option key={r.value} value={r.value}>{r.value}</option>
+                    ))}
                   </select>
                 </div>
 
