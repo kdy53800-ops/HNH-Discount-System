@@ -6,6 +6,7 @@ export default function FilterSettings() {
   const [options, setOptions] = useState([]);
   const [newValue, setNewValue] = useState('');
   const [newCode, setNewCode] = useState('');
+  const [newSortOrder, setNewSortOrder] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
 
@@ -53,14 +54,14 @@ export default function FilterSettings() {
 
     setSubmitLoading(true);
     try {
-      // 새 정렬 순서는 기존 최대값 + 1
       const maxSortOrder = options.reduce((max, obj) => (obj.sort_order > max ? obj.sort_order : max), 0);
+      const computedSortOrder = newSortOrder.trim() ? parseInt(newSortOrder.trim(), 10) : maxSortOrder + 1;
       
       const newOptionData = {
         category: activeCategory,
         value: newValue.trim(),
         code: newCode.trim() || `custom_${Date.now()}`,
-        sort_order: maxSortOrder + 1
+        sort_order: computedSortOrder
       };
 
       const { data, error } = await supabase
@@ -84,6 +85,7 @@ export default function FilterSettings() {
       alert('새 항목이 성공적으로 추가되었습니다.');
       setNewValue('');
       setNewCode('');
+      setNewSortOrder('');
       fetchOptions();
     } catch (err) {
       alert(`항목 등록 중 오류: ${err.message}`);
@@ -117,6 +119,33 @@ export default function FilterSettings() {
       fetchOptions();
     } catch (err) {
       alert(`삭제 중 에러: ${err.message}`);
+    }
+  };
+
+  const handleSortOrderChange = async (id, currentVal, newVal) => {
+    const parsed = parseInt(newVal, 10);
+    if (isNaN(parsed) || parsed === currentVal) return;
+
+    try {
+      const { error } = await supabase
+        .from('code_options')
+        .update({ sort_order: parsed })
+        .eq('id', id);
+      if (error) throw error;
+      
+      // Mock DB sync
+      const stored = localStorage.getItem('discount_app_code_options');
+      if (stored) {
+        const parsedData = JSON.parse(stored);
+        const idx = parsedData.findIndex(o => o.id === id);
+        if (idx !== -1) {
+          parsedData[idx].sort_order = parsed;
+          localStorage.setItem('discount_app_code_options', JSON.stringify(parsedData));
+        }
+      }
+      fetchOptions();
+    } catch (err) {
+      alert(`순서 변경 오류: ${err.message}`);
     }
   };
 
@@ -182,6 +211,16 @@ export default function FilterSettings() {
                 className="form-input"
               />
             </div>
+            <div className="form-group" style={{ width: '100px' }}>
+              <label className="form-label">정렬 순서</label>
+              <input 
+                type="number" 
+                value={newSortOrder} 
+                onChange={(e) => setNewSortOrder(e.target.value)} 
+                placeholder="마지막" 
+                className="form-input"
+              />
+            </div>
             <div className="form-group" style={{ marginBottom: '4px' }}>
               <button type="submit" disabled={submitLoading} className="btn btn-primary">
                 {submitLoading ? '추가 중...' : '추가하기'}
@@ -216,7 +255,16 @@ export default function FilterSettings() {
                     <tr key={opt.id}>
                       <td style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{opt.value}</td>
                       <td style={{ color: 'var(--text-secondary)' }}>{opt.code}</td>
-                      <td>{opt.sort_order}</td>
+                      <td>
+                        <input
+                          type="number"
+                          defaultValue={opt.sort_order}
+                          onBlur={(e) => handleSortOrderChange(opt.id, opt.sort_order, e.target.value)}
+                          className="form-input"
+                          style={{ width: '70px', padding: '4px', textAlign: 'center' }}
+                          title="숫자를 입력하고 다른 곳을 클릭하면 저장됩니다."
+                        />
+                      </td>
                       <td style={{ textAlign: 'center' }}>
                         <button 
                           onClick={() => handleDeleteOption(opt.id, opt.value)} 
