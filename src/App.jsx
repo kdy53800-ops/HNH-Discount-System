@@ -316,7 +316,7 @@ export default function App() {
             {activeTab === 'department-settings' && '임직원 소속 부서 조직도를 5단계 계층 구조로 설정하고 추가/수정합니다.'}
             {activeTab === 'filter-settings' && '감면 사유 및 처리 상태에 대한 필터링 옵션을 설정합니다.'}
             {activeTab === 'user-management' && '시스템을 이용하는 직원의 계정별 권한(일반 신청자, 원무팀, 원무팀장 등)을 설정하고 관리합니다.'}
-          </p>
+          </div>
         </div>
 
         {/* 활성화된 탭에 맞춰 화면 마운트 */}
