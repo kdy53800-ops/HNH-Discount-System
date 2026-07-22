@@ -629,6 +629,15 @@ function initMockDB() {
     }
   } catch (e) {}
 
+  // 정식 서비스 전환용: 이전 가짜 신청 데이터 완전 초기화
+  if (!localStorage.getItem('prod_clear_v1')) {
+    localStorage.removeItem(MOCK_STORAGE_KEYS.discount_requests);
+    localStorage.removeItem(MOCK_STORAGE_KEYS.request_status_logs);
+    localStorage.removeItem(MOCK_STORAGE_KEYS.request_edit_logs);
+    localStorage.removeItem(MOCK_STORAGE_KEYS.access_logs);
+    localStorage.setItem('prod_clear_v1', 'true');
+  }
+
   const checkAndSeed = (key, defaultData) => {
     const stored = safeGetItem(key);
     let needSeed = false;
@@ -654,121 +663,10 @@ function initMockDB() {
   checkAndSeed(MOCK_STORAGE_KEYS.code_options, SEED_CODE_OPTIONS);
   checkAndSeed(MOCK_STORAGE_KEYS.users, SEED_USERS);
 
-  // 모의 신청 데이터 3건 초기 시드
-  const mockRequests = [
-    {
-      id: 'req-1',
-      discount_type: '외래',
-      patient_no: '1234567',
-      patient_name: '김외래',
-      relationship: '직계 (자녀,부모(본인 또는 배우자의))',
-      clinic_dept: 'IM_1 (고인영)',
-      clinic_date: '2026-07-01',
-      reason_category: '감면규정등록',
-      details: '내과 외래 혈압약 처방 진료비 감면 신청 건입니다.',
-      applicant_dept: '간호부',
-      applicant_email: 'applicant@hospital.com',
-      applicant_name: '홍신청',
-      ip_address: '192.168.1.50',
-      discount_amount: 52000,
-      admin_notes: '서류 확인 완료되어 1차 승인 및 최종 승인 완료되었습니다.',
-      status: '최종승인',
-      created_at: '2026-07-01T10:00:00.000Z',
-      updated_at: '2026-07-01T14:30:00.000Z'
-    },
-    {
-      id: 'req-2',
-      discount_type: '검진',
-      patient_no: '9988776',
-      patient_name: '홍신청',
-      relationship: '본인/배우자',
-      clinic_dept: 'RD_1 (백선미)',
-      clinic_date: '2026-07-03',
-      reason_category: '감면규정등록',
-      details: '매년 시행하는 정기 종합 검진비 감면 신청입니다.',
-      applicant_dept: '간호부',
-      applicant_email: 'applicant@hospital.com',
-      applicant_name: '홍신청',
-      ip_address: '192.168.1.50',
-      discount_amount: 0,
-      admin_notes: '',
-      status: '원무확인중',
-      created_at: '2026-07-03T02:15:00.000Z',
-      updated_at: '2026-07-03T02:15:00.000Z'
-    },
-    {
-      id: 'req-3',
-      discount_type: '입원',
-      patient_no: '5544332',
-      patient_name: '이입원',
-      relationship: '본인/배우자',
-      clinic_dept: 'RM_1 (서휘)',
-      clinic_date: '2026-07-02',
-      reason_category: '감면규정등록',
-      details: '정형외과 병동 입원 수술비 감면 신청건입니다.',
-      applicant_dept: '간호부',
-      applicant_email: 'applicant@hospital.com',
-      applicant_name: '홍신청',
-      ip_address: '192.168.1.72',
-      discount_amount: 350000,
-      admin_notes: '가족관계증명서 보완 필요하여 요청함 -> 보완 완료되어 담당자 승인',
-      status: '담당자 승인',
-      created_at: '2026-07-02T09:30:00.000Z',
-      updated_at: '2026-07-03T05:10:00.000Z'
-    }
-  ];
-
-  const mockStatusLogs = [
-    {
-      id: 'slog-1',
-      request_id: 'req-1',
-      from_status: null,
-      to_status: '신청완료',
-      changed_by_email: 'applicant@hospital.com',
-      changed_by_name: '홍신청',
-      changed_at: '2026-07-01T10:00:00.000Z'
-    },
-    {
-      id: 'slog-2',
-      request_id: 'req-1',
-      from_status: '신청완료',
-      to_status: '원무확인중',
-      changed_by_email: 'staff@hospital.com',
-      changed_by_name: '김원무',
-      changed_at: '2026-07-01T11:00:00.000Z'
-    },
-    {
-      id: 'slog-3',
-      request_id: 'req-1',
-      from_status: '원무확인중',
-      to_status: '담당자 승인',
-      changed_by_email: 'staff@hospital.com',
-      changed_by_name: '김원무',
-      changed_at: '2026-07-01T12:00:00.000Z'
-    },
-    {
-      id: 'slog-4',
-      request_id: 'req-1',
-      from_status: '담당자 승인',
-      to_status: '최종승인',
-      changed_by_email: 'manager@hospital.com',
-      changed_by_name: '박팀장',
-      changed_at: '2026-07-01T14:30:00.000Z'
-    }
-  ];
-
-  const mockEditLogs = [
-    {
-      id: 'elog-1',
-      request_id: 'req-3',
-      field_name: 'patient_no',
-      before_value: '5544330',
-      after_value: '5544332',
-      edited_by_email: 'staff@hospital.com',
-      edited_by_name: '김원무',
-      edited_at: '2026-07-03T05:08:00.000Z'
-    }
-  ];
+  // 모의 신청 데이터 3건 초기 시드 제거 (빈 배열로 처리)
+  const mockRequests = [];
+  const mockStatusLogs = [];
+  const mockEditLogs = [];
 
   checkAndSeed(MOCK_STORAGE_KEYS.discount_requests, mockRequests);
   checkAndSeed(MOCK_STORAGE_KEYS.request_status_logs, mockStatusLogs);

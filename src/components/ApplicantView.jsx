@@ -21,6 +21,8 @@ export default function ApplicantView({ currentUser }) {
   const [requestList, setRequestList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [alertRequests, setAlertRequests] = useState([]);
+  const [showAlertModal, setShowAlertModal] = useState(false);
 
   // 상세 조회 및 보완 수정용 상태
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -90,6 +92,16 @@ export default function ApplicantView({ currentUser }) {
 
       if (error) throw error;
       setRequestList(data || []);
+
+      // 보완요청/반려 알림 로직
+      const alerts = (data || []).filter(req => req.status === '보완요청' || req.status === '반려');
+      if (alerts.length > 0) {
+        const hasSeen = sessionStorage.getItem(`alert_seen_${applicantEmail}`);
+        if (!hasSeen) {
+          setAlertRequests(alerts);
+          setShowAlertModal(true);
+        }
+      }
     } catch (err) {
       console.error('신청 내역 조회 중 오류:', err);
     } finally {
@@ -679,6 +691,50 @@ export default function ApplicantView({ currentUser }) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* 신청서 모달 닫힘 태그 */}
+
+      {/* 보완요청/반려 알림 팝업 모달 */}
+      {showAlertModal && (
+        <div className="modal-overlay">
+          <div className="modal-content glass-card" style={{ maxWidth: '400px', width: '90%' }}>
+            <div className="modal-header">
+              <h2 className="log-section-title" style={{ fontSize: '18px', color: '#e11d48', borderBottom: 'none', margin: 0, padding: 0 }}>⚠️ 확인 필요한 신청 내역</h2>
+              <button className="close-btn" onClick={() => {
+                setShowAlertModal(false);
+                sessionStorage.setItem(`alert_seen_${applicantEmail}`, 'true');
+              }}>
+                <span className="material-icons">close</span>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '20px 0' }}>
+              <p style={{ marginBottom: '16px', fontSize: '14px', lineHeight: '1.5' }}>
+                아래 환자의 감면 신청 건에 대해 <strong>보완요청</strong> 또는 <strong>반려</strong> 처리된 내역이 있습니다. 목록에서 클릭하여 상세 사유를 확인해 주세요.
+              </p>
+              <div style={{ background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+                  {alertRequests.map(req => (
+                    <li key={req.id} style={{ marginBottom: '8px', fontSize: '14px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span><strong>{req.patient_name}</strong> 환자</span>
+                      <span style={{ fontWeight: 'bold', color: req.status === '반려' ? '#e11d48' : '#ca8a04' }}>{req.status}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => {
+                    setShowAlertModal(false);
+                    sessionStorage.setItem(`alert_seen_${applicantEmail}`, 'true');
+                  }}
+                >
+                  확인했습니다
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
