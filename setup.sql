@@ -229,6 +229,16 @@ INSERT INTO code_options (category, code, value, sort_order) VALUES
 ('discount_reason', 'liability', '병원 귀책', 5),
 ('discount_reason', 'other', '기타 (상세내용 기재 필수)', 6);
 
+-- 신청자와의 관계
+INSERT INTO code_options (category, code, value, sort_order) VALUES
+('relationship', 'self', '본인', 1),
+('relationship', 'father', '부', 2),
+('relationship', 'mother', '모', 3),
+('relationship', 'spouse', '배우자', 4),
+('relationship', 'child', '자녀', 5),
+('relationship', 'sibling', '형제/자매', 6),
+('relationship', 'other_rel', '기타 (관계없음-감면등록용)', 7);
+
 -- 4. 테스트 계정 추가 (권한별)
 INSERT INTO users (email, name, role, is_sysadmin, status, department_id) VALUES
 ('applicant@hospital.com', '홍신청', 'applicant', false, 'approved', '00000000-0000-0000-0000-00000000002f'), -- 재활간호팀
