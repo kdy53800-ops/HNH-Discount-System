@@ -56,10 +56,14 @@ export default function App() {
           
           // 권한에 따른 기본 탭 설정
           const role = currentSession.user.user_metadata?.role;
+          const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true;
+          
           if (role === 'manager') {
             setActiveTab('manager');
           } else if (role === 'admin') {
             setActiveTab('admin');
+          } else if (role === 'team_manager' || isSysAdmin) {
+            setActiveTab('user-management');
           } else {
             setActiveTab('applicant');
           }
@@ -84,10 +88,13 @@ export default function App() {
     if (currentSession?.user) {
       setCurrentUser(currentSession.user);
       const role = currentSession.user.user_metadata?.role;
+      const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true;
       if (role === 'manager') {
         setActiveTab('manager');
       } else if (role === 'admin') {
         setActiveTab('admin');
+      } else if (role === 'team_manager' || isSysAdmin) {
+        setActiveTab('user-management');
       } else {
         setActiveTab('applicant');
       }
@@ -261,8 +268,8 @@ export default function App() {
               </>
             )}
 
-            {/* 시스템 관리자는 권한 관리 탭 추가 노출 */}
-            {isSysAdmin && (
+            {/* 권한 관리 탭 노출 (시스템 관리자, 원무팀장, 팀 관리자) */}
+            {(isSysAdmin || role === 'manager' || role === 'team_manager') && (
               <button 
                 onClick={() => { setActiveTab('user-management'); setIsMobileMenuOpen(false); }} 
                 className={`nav-item ${activeTab === 'user-management' ? 'active' : ''}`}
@@ -329,7 +336,7 @@ export default function App() {
             {activeTab === 'clinic-settings' && '감면 대상 진료과 코드와 원내 의료인 성명 매핑 정보를 실시간으로 수정 및 추가합니다.'}
             {activeTab === 'department-settings' && '임직원 소속 부서 조직도를 5단계 계층 구조로 설정하고 추가/수정합니다.'}
             {activeTab === 'filter-settings' && '감면 사유 및 처리 상태에 대한 필터링 옵션을 설정합니다.'}
-            {activeTab === 'user-management' && '시스템을 이용하는 직원의 계정별 권한(일반 신청자, 원무팀, 원무팀장 등)을 설정하고 관리합니다.'}
+            {activeTab === 'user-management' && '시스템 가입 승인 및 사용자의 권한을 관리합니다.'}
           </div>
         </div>
 
