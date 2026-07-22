@@ -184,8 +184,11 @@ export default function App() {
 
   const role = currentUser.user_metadata?.role || 'applicant';
   const isSysAdmin = currentUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
-  const roleName = currentUser.user_metadata?.full_name || '사용자';
-  const departmentName = currentUser.user_metadata?.department || '일반부서';
+  const roleName = currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || currentUser.name || '사용자';
+
+  const currentDeptId = currentUser.user_metadata?.department_id || currentUser.department_id;
+  const foundDept = allDepartments.find(d => d.id === currentDeptId);
+  const departmentName = foundDept ? foundDept.name : (currentUser.user_metadata?.department || '미지정');
   const userStatus = currentUser.user_metadata?.status || 'pending';
 
   if (userStatus !== 'approved') {
