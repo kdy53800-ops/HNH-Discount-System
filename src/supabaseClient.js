@@ -618,6 +618,17 @@ function initMockDB() {
     }
   } catch (e) {}
 
+  try {
+    const storedUsers = safeGetItem(MOCK_STORAGE_KEYS.users);
+    if (storedUsers) {
+      const parsedUsers = JSON.parse(storedUsers);
+      // 구버전(상태 없는 경우)이면 초기화
+      if (parsedUsers.length > 0 && parsedUsers.some(u => u.status === undefined)) {
+        localStorage.removeItem(MOCK_STORAGE_KEYS.users);
+      }
+    }
+  } catch (e) {}
+
   const checkAndSeed = (key, defaultData) => {
     const stored = safeGetItem(key);
     let needSeed = false;
