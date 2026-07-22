@@ -114,7 +114,7 @@ export default function ClinicSettings() {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '32px' }}>
+    <div className="clinic-settings-grid">
       {/* 등록 카드 */}
       <div className="glass-card" style={{ height: 'fit-content' }}>
         <h2 className="log-section-title" style={{ fontSize: '17px', marginBottom: '20px' }}>신규 진료과 & 의료인 추가</h2>
@@ -164,12 +164,12 @@ export default function ClinicSettings() {
           <div className="empty-state">등록된 진료과 및 의료인 정보가 없습니다.</div>
         ) : (
           <div className="table-responsive" style={{ maxHeight: '550px' }}>
-            <table className="custom-table">
+            <table className="custom-table compact">
               <thead>
                 <tr>
                   <th>진료과 코드</th>
                   <th>의료인 성명</th>
-                  <th>신청용 표기명</th>
+                  <th className="hide-on-mobile">신청용 표기명</th>
                   <th style={{ textAlign: 'center' }}>관리</th>
                 </tr>
               </thead>
@@ -178,7 +178,7 @@ export default function ClinicSettings() {
                   <tr key={c.name} style={{ cursor: 'default' }}>
                     <td style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>{c.code}</td>
                     <td>{c.doctor_name}</td>
-                    <td style={{ fontFamily: 'var(--font-title)' }}>{c.name}</td>
+                    <td className="hide-on-mobile" style={{ fontFamily: 'var(--font-title)' }}>{c.name}</td>
                     <td style={{ textAlign: 'center' }}>
                       <button 
                         onClick={() => handleDeleteClinic(c.name)} 

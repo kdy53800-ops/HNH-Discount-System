@@ -1409,6 +1409,13 @@ body {
   gap: 24px;
 }
 
+/* ClinicSettings Responsive Classes */
+.clinic-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 32px;
+}
+
 .filter-form-row {
   display: flex;
   gap: 16px;
@@ -1422,6 +1429,9 @@ body {
 
 @media (max-width: 768px) {
   .filter-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .clinic-settings-grid {
     grid-template-columns: 1fr;
   }
   .filter-form-row {
