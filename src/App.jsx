@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase, isMock } from './supabaseClient';
 import AuthScreen from './components/AuthScreen';
-import RoleSimulator from './components/RoleSimulator';
 import ApplicantView from './components/ApplicantView';
 import AdminView from './components/AdminView';
 import ManagerView from './components/ManagerView';
@@ -151,8 +150,6 @@ export default function App() {
         <main className="main-content">
           <AuthScreen onSessionRefresh={handleSessionRefresh} />
         </main>
-        {/* 로그인 대기 단계에서도 역할 빠른 선택을 위해 플로팅 시뮬레이터 제공 */}
-        <RoleSimulator currentUser={null} onSessionRefresh={handleSessionRefresh} />
       </div>
     );
   }
@@ -361,9 +358,6 @@ export default function App() {
         {activeTab === 'filter-settings' && <FilterSettings />}
         {activeTab === 'user-management' && <UserManagement currentUser={currentUser} />}
       </main>
-
-      {/* 테스트를 원활하게 도와줄 하단 플로팅 역할 체인저 */}
-      <RoleSimulator currentUser={currentUser} onSessionRefresh={handleSessionRefresh} />
 
       {/* 소속 부서 변경 모달 */}
       {showDeptEditModal && (

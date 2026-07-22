@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase, isMock } from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 
 export default function AuthScreen({ onSessionRefresh }) {
   const [loading, setLoading] = useState(false);
@@ -16,11 +16,7 @@ export default function AuthScreen({ onSessionRefresh }) {
       });
       if (error) throw error;
       
-      // Mock 모드인 경우 시뮬레이터 흐름을 위해 신청자로 기본 로그인 유도
-      if (isMock) {
-        await supabase.auth.mockLogin('applicant@hospital.com');
-        onSessionRefresh();
-      }
+
     } catch (err) {
       alert(`구글 로그인 시도 중 에러가 발생했습니다: ${err.message}`);
     } finally {
@@ -28,22 +24,7 @@ export default function AuthScreen({ onSessionRefresh }) {
     }
   };
 
-  // 모의 가상 계정 로그인 처리
-  const handleMockLogin = async (email) => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.mockLogin(email);
-      if (error) {
-        alert(error.message);
-      } else {
-        onSessionRefresh();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+
 
   return (
     <div className="login-wrapper">
@@ -81,85 +62,7 @@ export default function AuthScreen({ onSessionRefresh }) {
           Google 계정으로 로그인
         </button>
 
-        {isMock && (
-          <>
-            <div className="separator">테스트용 가상 계정 선택</div>
-            <div className="mock-accounts-list">
-              <button 
-                onClick={() => handleMockLogin('applicant@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">일반 직원 (홍신청 - 간호부)</span>
-                  <span className="mock-account-email">applicant@hospital.com</span>
-                </div>
-                <span className="user-role-badge applicant">신청자</span>
-              </button>
 
-              <button 
-                onClick={() => handleMockLogin('team_manager@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">팀 관리자 (이팀장 - 재활간호팀)</span>
-                  <span className="mock-account-email">team_manager@hospital.com</span>
-                </div>
-                <span className="user-role-badge manager">팀 관리자</span>
-              </button>
-
-              <button 
-                onClick={() => handleMockLogin('staff@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">원무팀 직원 (김원무 - 원무팀)</span>
-                  <span className="mock-account-email">staff@hospital.com</span>
-                </div>
-                <span className="user-role-badge admin">원무팀</span>
-              </button>
-
-
-              <button 
-                onClick={() => handleMockLogin('manager@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">원무팀 관리자 (박팀장 - 원무팀)</span>
-                  <span className="mock-account-email">manager@hospital.com</span>
-                </div>
-                <span className="user-role-badge manager">원무팀 관리자</span>
-              </button>
-
-              <button 
-                onClick={() => handleMockLogin('sysadmin@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">시스템 관리자 (최관리 - 전산팀)</span>
-                  <span className="mock-account-email">sysadmin@hospital.com</span>
-                </div>
-                <span className="user-role-badge sysadmin">관리자</span>
-              </button>
-
-              <button 
-                onClick={() => handleMockLogin('newbie@hospital.com')} 
-                disabled={loading}
-                className="mock-account-btn"
-              >
-                <div className="mock-account-info">
-                  <span className="mock-account-name">신규 가입 테스트 (newbie)</span>
-                  <span className="mock-account-email">newbie@hospital.com</span>
-                </div>
-                <span className="user-role-badge applicant">신규</span>
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
   );
