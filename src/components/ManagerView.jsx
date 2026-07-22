@@ -142,48 +142,51 @@ export default function ManagerView({ currentUser }) {
         pendingCnt++;
       }
 
-      // 구분별 통계
-      const typeKey = item.discount_type || '미분류';
-      if (!types[typeKey]) types[typeKey] = { count: 0, amount: 0 };
-      types[typeKey].count++;
-      types[typeKey].amount += amount;
-
-      // 사유별 통계
-      const reasonKey = item.reason_category || '미분류';
-      if (!reasons[reasonKey]) reasons[reasonKey] = { count: 0, amount: 0 };
-      reasons[reasonKey].count++;
-      reasons[reasonKey].amount += amount;
-
-      // 부서별 통계
-      const deptKey = item.applicant_dept || '미분류';
-      if (!depts[deptKey]) depts[deptKey] = { count: 0, amount: 0 };
-      depts[deptKey].count++;
-      depts[deptKey].amount += amount;
-
-      // 진료과별 통계
-      const cDeptKey = item.clinic_dept || '미분류';
-      if (!clinicDepts[cDeptKey]) clinicDepts[cDeptKey] = { count: 0, amount: 0 };
-      clinicDepts[cDeptKey].count++;
-      clinicDepts[cDeptKey].amount += amount;
-
-      // 관계별 통계
-      const relKey = item.relationship || '미분류';
-      if (!relations[relKey]) relations[relKey] = { count: 0, amount: 0 };
-      relations[relKey].count++;
-      relations[relKey].amount += amount;
-
-      // 결재상태별 통계
+      // 결재상태별 통계 (전체 데이터 기준)
       const statusKey = item.status || '미분류';
       if (!statuses[statusKey]) statuses[statusKey] = { count: 0, amount: 0 };
       statuses[statusKey].count++;
       statuses[statusKey].amount += amount;
 
-      // 월별 통계
-      const date = new Date(item.created_at);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      if (!monthly[monthKey]) monthly[monthKey] = { name: monthKey, count: 0, amount: 0 };
-      monthly[monthKey].count++;
-      monthly[monthKey].amount += amount;
+      // 나머지 통계는 모두 '최종승인'된 데이터만 기준
+      if (item.status === '최종승인') {
+        // 구분별 통계
+        const typeKey = item.discount_type || '미분류';
+        if (!types[typeKey]) types[typeKey] = { count: 0, amount: 0 };
+        types[typeKey].count++;
+        types[typeKey].amount += amount;
+
+        // 사유별 통계
+        const reasonKey = item.reason_category || '미분류';
+        if (!reasons[reasonKey]) reasons[reasonKey] = { count: 0, amount: 0 };
+        reasons[reasonKey].count++;
+        reasons[reasonKey].amount += amount;
+
+        // 부서별 통계
+        const deptKey = item.applicant_dept || '미분류';
+        if (!depts[deptKey]) depts[deptKey] = { count: 0, amount: 0 };
+        depts[deptKey].count++;
+        depts[deptKey].amount += amount;
+
+        // 진료과별 통계
+        const cDeptKey = item.clinic_dept || '미분류';
+        if (!clinicDepts[cDeptKey]) clinicDepts[cDeptKey] = { count: 0, amount: 0 };
+        clinicDepts[cDeptKey].count++;
+        clinicDepts[cDeptKey].amount += amount;
+
+        // 관계별 통계
+        const relKey = item.relationship || '미분류';
+        if (!relations[relKey]) relations[relKey] = { count: 0, amount: 0 };
+        relations[relKey].count++;
+        relations[relKey].amount += amount;
+
+        // 월별 통계
+        const date = new Date(item.created_at);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (!monthly[monthKey]) monthly[monthKey] = { name: monthKey, count: 0, amount: 0 };
+        monthly[monthKey].count++;
+        monthly[monthKey].amount += amount;
+      }
     });
 
     const sortedMonthly = Object.values(monthly).sort((a, b) => a.name.localeCompare(b.name));
@@ -633,7 +636,7 @@ export default function ManagerView({ currentUser }) {
         
         {/* 월별 감면 신청 추이 (꺾은선) */}
         <div className="glass-card" style={{ gridColumn: 'span 3' }}>
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>기간별(월별) 감면 신청 추이</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>기간별(월별) 최종승인 감면 추이</h3>
           {stats.monthlyStats.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
@@ -696,7 +699,7 @@ export default function ManagerView({ currentUser }) {
 
         {/* 감면구분별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면구분별 지분 (금액 기준)</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면구분별 지분 (최종승인 금액 기준)</h3>
           {typePieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
@@ -725,7 +728,7 @@ export default function ManagerView({ currentUser }) {
 
         {/* 감면사유별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면사유별 지분 (금액 기준)</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면사유별 지분 (최종승인 금액 기준)</h3>
           {reasonPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
@@ -754,7 +757,7 @@ export default function ManagerView({ currentUser }) {
 
         {/* 신청자와의 관계별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>대상자 관계별 지분 (금액 기준)</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>대상자 관계별 지분 (최종승인 금액 기준)</h3>
           {relationPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
@@ -783,7 +786,7 @@ export default function ManagerView({ currentUser }) {
 
         {/* 신청 부서별 통계 (상위 8개) */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>신청 부서별 지분 (금액 기준, 상위 8)</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>신청 부서별 지분 (최종승인 금액 기준, 상위 8)</h3>
           {deptPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
@@ -812,7 +815,7 @@ export default function ManagerView({ currentUser }) {
 
         {/* 진료과별 통계 (상위 8개) */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>진료과별 지분 (금액 기준, 상위 8)</h3>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>진료과별 지분 (최종승인 금액 기준, 상위 8)</h3>
           {clinicDeptPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
