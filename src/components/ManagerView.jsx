@@ -624,12 +624,12 @@ export default function ManagerView({ currentUser }) {
       <div className="analytics-section" style={{ marginBottom: '24px' }}>
         
         {/* 월별 감면 신청 추이 (꺾은선) */}
-        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
+        <div className="glass-card" style={{ gridColumn: 'span 3' }}>
           <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>기간별(월별) 감면 신청 추이</h3>
           {stats.monthlyStats.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 300 }}>
+            <div style={{ width: '100%', height: 220 }}>
               <ResponsiveContainer>
                 <LineChart data={stats.monthlyStats} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -659,13 +659,13 @@ export default function ManagerView({ currentUser }) {
           {statusPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 260 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={statusPieData}
                     cx="50%" cy="50%"
-                    innerRadius={40} outerRadius={80}
+                    innerRadius={30} outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -688,13 +688,13 @@ export default function ManagerView({ currentUser }) {
           {typePieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 260 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={typePieData}
                     cx="50%" cy="50%"
-                    outerRadius={80}
+                    outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -717,13 +717,13 @@ export default function ManagerView({ currentUser }) {
           {reasonPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 260 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={reasonPieData}
                     cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={80}
+                    innerRadius={20} outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -746,13 +746,13 @@ export default function ManagerView({ currentUser }) {
           {relationPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 260 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={relationPieData}
                     cx="50%" cy="50%"
-                    outerRadius={80}
+                    outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -775,13 +775,13 @@ export default function ManagerView({ currentUser }) {
           {deptPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 280 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={deptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={40} outerRadius={80}
+                    innerRadius={30} outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -804,13 +804,13 @@ export default function ManagerView({ currentUser }) {
           {clinicDeptPieData.length === 0 ? (
              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
-            <div style={{ width: '100%', height: 280 }}>
+            <div style={{ width: '100%', height: 180 }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
                     data={clinicDeptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={40} outerRadius={80}
+                    innerRadius={30} outerRadius={60}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}

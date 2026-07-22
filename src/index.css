@@ -899,12 +899,18 @@ body {
 /* 통계 분석 차트 카드 디자인 */
 .analytics-section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
   margin-top: 24px;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .analytics-section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
   .analytics-section {
     grid-template-columns: 1fr;
   }
