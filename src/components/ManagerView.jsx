@@ -17,7 +17,10 @@ export default function ManagerView({ currentUser }) {
     pendingCount: 0,
     typeStats: {},
     reasonStats: {},
-    deptStats: {}
+    deptStats: {},
+    clinicDeptStats: {},
+    relationshipStats: {},
+    statusStats: {}
   });
 
   // 조회 이력 및 결재 히스토리
@@ -118,6 +121,9 @@ export default function ManagerView({ currentUser }) {
     const types = {};
     const reasons = {};
     const depts = {};
+    const clinicDepts = {};
+    const relations = {};
+    const statuses = {};
 
     dataList.forEach(item => {
       const amount = Number(item.discount_amount || 0);
@@ -131,22 +137,40 @@ export default function ManagerView({ currentUser }) {
       }
 
       // 구분별 통계
-      const typeKey = item.discount_type;
+      const typeKey = item.discount_type || '미분류';
       if (!types[typeKey]) types[typeKey] = { count: 0, amount: 0 };
       types[typeKey].count++;
       types[typeKey].amount += amount;
 
       // 사유별 통계
-      const reasonKey = item.reason_category;
+      const reasonKey = item.reason_category || '미분류';
       if (!reasons[reasonKey]) reasons[reasonKey] = { count: 0, amount: 0 };
       reasons[reasonKey].count++;
       reasons[reasonKey].amount += amount;
 
       // 부서별 통계
-      const deptKey = item.applicant_dept;
+      const deptKey = item.applicant_dept || '미분류';
       if (!depts[deptKey]) depts[deptKey] = { count: 0, amount: 0 };
       depts[deptKey].count++;
       depts[deptKey].amount += amount;
+
+      // 진료과별 통계
+      const cDeptKey = item.clinic_dept || '미분류';
+      if (!clinicDepts[cDeptKey]) clinicDepts[cDeptKey] = { count: 0, amount: 0 };
+      clinicDepts[cDeptKey].count++;
+      clinicDepts[cDeptKey].amount += amount;
+
+      // 관계별 통계
+      const relKey = item.relationship || '미분류';
+      if (!relations[relKey]) relations[relKey] = { count: 0, amount: 0 };
+      relations[relKey].count++;
+      relations[relKey].amount += amount;
+
+      // 결재상태별 통계
+      const statusKey = item.status || '미분류';
+      if (!statuses[statusKey]) statuses[statusKey] = { count: 0, amount: 0 };
+      statuses[statusKey].count++;
+      statuses[statusKey].amount += amount;
     });
 
     setStats({
@@ -157,7 +181,10 @@ export default function ManagerView({ currentUser }) {
       pendingCount: pendingCnt,
       typeStats: types,
       reasonStats: reasons,
-      deptStats: depts
+      deptStats: depts,
+      clinicDeptStats: clinicDepts,
+      relationshipStats: relations,
+      statusStats: statuses
     });
   };
 
@@ -325,10 +352,11 @@ export default function ManagerView({ currentUser }) {
   };
 
   // 가장 비율이 큰 값을 기준으로 통계 그래프 너비 계산
-  const getMaxStats = (statsObj) => {
+  const getMaxStats = (statsObj, useCount = false) => {
     let max = 0;
     Object.values(statsObj).forEach(val => {
-      if (val.amount > max) max = val.amount;
+      const compareVal = useCount ? val.count : val.amount;
+      if (compareVal > max) max = compareVal;
     });
     return max || 1;
   };
@@ -336,6 +364,9 @@ export default function ManagerView({ currentUser }) {
   const maxTypeAmount = getMaxStats(stats.typeStats);
   const maxReasonAmount = getMaxStats(stats.reasonStats);
   const maxDeptAmount = getMaxStats(stats.deptStats);
+  const maxClinicDeptAmount = getMaxStats(stats.clinicDeptStats);
+  const maxRelationAmount = getMaxStats(stats.relationshipStats);
+  const maxStatusCount = getMaxStats(stats.statusStats, true); // 상태는 건수 기준 비교
 
   // 한글 필드명 맵핑
   const getFieldKoreanName = (fieldName) => {
@@ -359,118 +390,12 @@ export default function ManagerView({ currentUser }) {
 
   return (
     <div>
-      {/* 1. 통계 요약 카드 영역 */}
-      <div className="responsive-stats stats-grid">
-        <div className="stat-card">
-          <div className="stat-label">전체 감면 신청 건수</div>
-          <div className="stat-value">{stats.totalCount}건</div>
-          <div className="stat-sub">현재 조건 필터 기준 건수</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">최종 승인 완료 건수</div>
-          <div className="stat-value">{stats.approvedCount}건</div>
-          <div className="stat-sub">승인 완료 비율: {stats.totalCount ? Math.round((stats.approvedCount / stats.totalCount) * 100) : 0}%</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">누적 감면 적용 금액</div>
-          <div className="stat-value">{stats.approvedAmount.toLocaleString()}원</div>
-          <div className="stat-sub">최종 승인 완료 금액의 합계</div>
-        </div>
-        <div className="stat-card" style={{ borderColor: 'rgba(217, 119, 6, 0.3)' }}>
-          <div className="stat-label">결재 처리 대기 건수</div>
-          <div className="stat-value" style={{ color: '#d97706' }}>{stats.pendingCount}건</div>
-          <div className="stat-sub">승인/반려 결정 보류 중인 신청 건</div>
-        </div>
-      </div>
-
-      {/* 2. 시각화 통계 섹션 (Vanilla CSS Bar Charts) */}
-      <div className="analytics-section" style={{ marginBottom: '24px' }}>
-        {/* 감면구분별 통계 */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면구분별 통계 (누적 금액 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.typeStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.typeStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxTypeAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #6366f1, #06b6d4)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* 감면사유별 통계 */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면사유별 통계 (누적 금액 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.reasonStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.reasonStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxReasonAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #ec4899, #8b5cf6)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* 부서별 통계 */}
-        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>부서별 누적 감면 금액 현황</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.deptStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.deptStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxDeptAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #06b6d4, #10b981)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. 결재 대기 목록 & 엑셀 전체 목록 필터링 */}
+      {/* 0. 상세 검색/필터 영역을 최상단으로 이동 */}
       <div className="glass-card" style={{ marginBottom: '24px' }}>
-        <div className="flex justify-between items-center" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-          <h2 className="log-section-title" style={{ fontSize: '18px', borderBottom: 'none', paddingBottom: 0, margin: 0 }}>전체 감면 결재 및 관리 대시보드</h2>
-          <button onClick={handleExportCSV} className="btn btn-accent hide-on-mobile" style={{ padding: '8px 12px', fontSize: '13px', whiteSpace: 'nowrap' }}>
-            엑셀 다운로드
-          </button>
-        </div>
-
-        {/* 상세 검색/필터 영역 */}
+        <h2 className="log-section-title" style={{ fontSize: '18px', borderBottom: 'none', paddingBottom: '16px', margin: 0 }}>
+          감면 관리 대시보드 - 데이터 필터
+        </h2>
+        
         <div className="search-filter-container">
           <div className="search-filter-row">
             <div className="quick-search-field">
@@ -629,6 +554,199 @@ export default function ManagerView({ currentUser }) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 1. 통계 요약 카드 영역 */}
+      <div className="responsive-stats stats-grid">
+        <div className="stat-card">
+          <div className="stat-label">전체 필터된 신청 건수</div>
+          <div className="stat-value">{stats.totalCount}건</div>
+          <div className="stat-sub">현재 조건 필터 기준 총 누적 신청</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">필터된 누적 감면 신청 금액</div>
+          <div className="stat-value">{stats.totalAmount.toLocaleString()}원</div>
+          <div className="stat-sub">모든 처리 상태 포함</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">최종 승인 완료 건수</div>
+          <div className="stat-value">{stats.approvedCount}건</div>
+          <div className="stat-sub">승인 완료 비율: {stats.totalCount ? Math.round((stats.approvedCount / stats.totalCount) * 100) : 0}%</div>
+        </div>
+        <div className="stat-card" style={{ borderColor: 'rgba(5, 150, 105, 0.3)' }}>
+          <div className="stat-label">승인된 감면 적용 금액</div>
+          <div className="stat-value" style={{ color: '#059669' }}>{stats.approvedAmount.toLocaleString()}원</div>
+          <div className="stat-sub">최종 승인 완료 금액의 합계</div>
+        </div>
+      </div>
+
+      {/* 2. 시각화 통계 섹션 (Vanilla CSS Bar Charts) */}
+      <div className="analytics-section" style={{ marginBottom: '24px' }}>
+        
+        {/* 결재 처리상태별 통계 (건수 기준) */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>결재 처리상태별 분포 (건수 기준)</h3>
+          <div className="bar-chart-container">
+            {Object.keys(stats.statusStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.statusStats).map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.count / maxStatusCount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key}</span>
+                      <span className="bar-chart-value">{value.count}건 ({value.amount.toLocaleString()}원)</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #f59e0b, #f97316)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 감면구분별 통계 */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면구분별 통계 (누적 금액 기준)</h3>
+          <div className="bar-chart-container">
+            {Object.keys(stats.typeStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.typeStats).map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.amount / maxTypeAmount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key} ({value.count}건)</span>
+                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #6366f1, #06b6d4)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 감면사유별 통계 */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면사유별 통계 (누적 금액 기준)</h3>
+          <div className="bar-chart-container">
+            {Object.keys(stats.reasonStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.reasonStats).map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.amount / maxReasonAmount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key} ({value.count}건)</span>
+                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #ec4899, #8b5cf6)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 신청자와의 관계별 통계 */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>대상자 관계별 통계 (누적 금액 기준)</h3>
+          <div className="bar-chart-container">
+            {Object.keys(stats.relationshipStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.relationshipStats).map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.amount / maxRelationAmount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key} ({value.count}건)</span>
+                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #14b8a6, #3b82f6)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 신청 부서별 통계 */}
+        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>신청 부서별 누적 감면 현황</h3>
+          <div className="bar-chart-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {Object.keys(stats.deptStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.deptStats)
+                .sort((a, b) => b[1].amount - a[1].amount) // 금액순 정렬
+                .map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.amount / maxDeptAmount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key} ({value.count}건)</span>
+                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #06b6d4, #10b981)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 진료과별 통계 */}
+        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>대상 진료과별 누적 감면 현황</h3>
+          <div className="bar-chart-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {Object.keys(stats.clinicDeptStats).length === 0 ? (
+              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+            ) : (
+              Object.entries(stats.clinicDeptStats)
+                .sort((a, b) => b[1].amount - a[1].amount) // 금액순 정렬
+                .map(([key, value]) => {
+                const widthPercent = Math.max(5, Math.round((value.amount / maxClinicDeptAmount) * 100));
+                return (
+                  <div key={key} className="bar-chart-row">
+                    <div className="bar-chart-info">
+                      <span className="bar-chart-label">{key} ({value.count}건)</span>
+                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
+                    </div>
+                    <div className="bar-chart-track">
+                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #8b5cf6, #ec4899)' }}></div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* 3. 결재 대기 목록 & 엑셀 전체 목록 */}
+      <div className="glass-card" style={{ marginBottom: '24px' }}>
+        <div className="flex justify-between items-center" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+          <h2 className="log-section-title" style={{ fontSize: '18px', borderBottom: 'none', paddingBottom: 0, margin: 0 }}>전체 감면 신청서 목록</h2>
+          <button onClick={handleExportCSV} className="btn btn-accent hide-on-mobile" style={{ padding: '8px 12px', fontSize: '13px', whiteSpace: 'nowrap' }}>
+            엑셀 다운로드
+          </button>
         </div>
 
         {loading ? (
