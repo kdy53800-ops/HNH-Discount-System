@@ -31,8 +31,13 @@ export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
     try {
       const { error } = await supabase
         .from('users')
-        .update({ department_id: selectedDept, status: 'pending' })
-        .eq('email', currentUser.email);
+        .upsert({
+          email: currentUser.email,
+          name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+          department_id: selectedDept,
+          status: 'pending',
+          role: 'applicant'
+        }, { onConflict: 'email' });
       
       if (error) throw error;
       
