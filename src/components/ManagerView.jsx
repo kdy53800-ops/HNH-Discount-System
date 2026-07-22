@@ -421,7 +421,15 @@ export default function ManagerView({ currentUser }) {
     const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
     if (percent < 0.05) return null; // 5% 미만은 라벨 표시 생략
     return (
-      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12" fontWeight="bold">
+      <text 
+        x={x} y={y} 
+        fill="#ffffff" 
+        textAnchor="middle" 
+        dominantBaseline="central" 
+        fontSize="12" 
+        fontWeight="bold"
+        style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8), -1px -1px 2px rgba(0,0,0,0.8)' }}
+      >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
@@ -665,7 +673,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={statusPieData}
                     cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={60}
+                    innerRadius={35} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -694,7 +702,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={typePieData}
                     cx="50%" cy="50%"
-                    outerRadius={60}
+                    outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -723,7 +731,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={reasonPieData}
                     cx="50%" cy="50%"
-                    innerRadius={20} outerRadius={60}
+                    innerRadius={25} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -752,7 +760,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={relationPieData}
                     cx="50%" cy="50%"
-                    outerRadius={60}
+                    outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -781,7 +789,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={deptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={60}
+                    innerRadius={35} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -810,7 +818,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={clinicDeptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={60}
+                    innerRadius={35} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
