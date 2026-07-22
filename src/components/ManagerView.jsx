@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { PieChart, Pie, Cell, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
 export default function ManagerView({ currentUser }) {
   const [requests, setRequests] = useState([]);
@@ -20,7 +21,8 @@ export default function ManagerView({ currentUser }) {
     deptStats: {},
     clinicDeptStats: {},
     relationshipStats: {},
-    statusStats: {}
+    statusStats: {},
+    monthlyStats: []
   });
 
   // 조회 이력 및 결재 히스토리
@@ -52,6 +54,9 @@ export default function ManagerView({ currentUser }) {
   // 페이지네이션 상태
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
+
+  // 차트 색상 팔레트
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a855f7', '#ec4899', '#f43f5e', '#14b8a6', '#6366f1'];
 
   useEffect(() => {
     fetchMasterData();
@@ -124,6 +129,7 @@ export default function ManagerView({ currentUser }) {
     const clinicDepts = {};
     const relations = {};
     const statuses = {};
+    const monthly = {};
 
     dataList.forEach(item => {
       const amount = Number(item.discount_amount || 0);
@@ -171,7 +177,16 @@ export default function ManagerView({ currentUser }) {
       if (!statuses[statusKey]) statuses[statusKey] = { count: 0, amount: 0 };
       statuses[statusKey].count++;
       statuses[statusKey].amount += amount;
+
+      // 월별 통계
+      const date = new Date(item.created_at);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (!monthly[monthKey]) monthly[monthKey] = { name: monthKey, count: 0, amount: 0 };
+      monthly[monthKey].count++;
+      monthly[monthKey].amount += amount;
     });
+
+    const sortedMonthly = Object.values(monthly).sort((a, b) => a.name.localeCompare(b.name));
 
     setStats({
       totalAmount: totalAmt,
@@ -184,7 +199,8 @@ export default function ManagerView({ currentUser }) {
       deptStats: depts,
       clinicDeptStats: clinicDepts,
       relationshipStats: relations,
-      statusStats: statuses
+      statusStats: statuses,
+      monthlyStats: sortedMonthly
     });
   };
 
@@ -351,22 +367,13 @@ export default function ManagerView({ currentUser }) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  // 가장 비율이 큰 값을 기준으로 통계 그래프 너비 계산
-  const getMaxStats = (statsObj, useCount = false) => {
-    let max = 0;
-    Object.values(statsObj).forEach(val => {
-      const compareVal = useCount ? val.count : val.amount;
-      if (compareVal > max) max = compareVal;
-    });
-    return max || 1;
+  // Recharts 툴팁 포맷터
+  const customTooltipFormatter = (value, name, props) => {
+    return [`${Number(value).toLocaleString()}원 (${props.payload.count}건)`, name];
   };
-
-  const maxTypeAmount = getMaxStats(stats.typeStats);
-  const maxReasonAmount = getMaxStats(stats.reasonStats);
-  const maxDeptAmount = getMaxStats(stats.deptStats);
-  const maxClinicDeptAmount = getMaxStats(stats.clinicDeptStats);
-  const maxRelationAmount = getMaxStats(stats.relationshipStats);
-  const maxStatusCount = getMaxStats(stats.statusStats, true); // 상태는 건수 기준 비교
+  const countTooltipFormatter = (value, name, props) => {
+    return [`${value}건`, name];
+  };
 
   // 한글 필드명 맵핑
   const getFieldKoreanName = (fieldName) => {
@@ -387,6 +394,38 @@ export default function ManagerView({ currentUser }) {
   const activeFilterCount = [
     filterStartDate, filterEndDate, filterStatus, filterType, filterPatientNo, filterPatientName, filterRelationship, filterClinicDept, filterClinicDate, filterReason, filterApplicantDept, filterApplicant
   ].filter(Boolean).length;
+
+  // PieChart용 데이터 변환
+  const generatePieData = (statsObj, useCount = false) => {
+    return Object.entries(statsObj)
+      .map(([name, data]) => ({
+        name,
+        value: useCount ? data.count : data.amount,
+        count: data.count,
+        amount: data.amount
+      }))
+      .filter(d => d.value > 0)
+      .sort((a, b) => b.value - a.value); // 크기순 정렬
+  };
+
+  const statusPieData = generatePieData(stats.statusStats, true);
+  const typePieData = generatePieData(stats.typeStats, false);
+  const reasonPieData = generatePieData(stats.reasonStats, false);
+  const relationPieData = generatePieData(stats.relationshipStats, false);
+  const deptPieData = generatePieData(stats.deptStats, false).slice(0, 8); // 너무 많은 부서는 상위 8개만 표시
+  const clinicDeptPieData = generatePieData(stats.clinicDeptStats, false).slice(0, 8);
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+    if (percent < 0.05) return null; // 5% 미만은 라벨 표시 생략
+    return (
+      <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize="12" fontWeight="bold">
+        {`${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
     <div>
@@ -581,161 +620,211 @@ export default function ManagerView({ currentUser }) {
         </div>
       </div>
 
-      {/* 2. 시각화 통계 섹션 (Vanilla CSS Bar Charts) */}
+      {/* 2. 시각화 통계 섹션 (Recharts 기반) */}
       <div className="analytics-section" style={{ marginBottom: '24px' }}>
         
+        {/* 월별 감면 신청 추이 (꺾은선) */}
+        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>기간별(월별) 감면 신청 추이</h3>
+          {stats.monthlyStats.length === 0 ? (
+            <div className="empty-state" style={{ padding: '40px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer>
+                <LineChart data={stats.monthlyStats} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis yAxisId="left" tickFormatter={(v) => (v / 10000) + '만'} tick={{ fontSize: 12 }} />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'amount') return [`${Number(value).toLocaleString()}원`, '감면 금액'];
+                      if (name === 'count') return [`${value}건`, '신청 건수'];
+                      return [value, name];
+                    }}
+                    labelStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Legend verticalAlign="top" height={36}/>
+                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#ec4899" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
         {/* 결재 처리상태별 통계 (건수 기준) */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>결재 처리상태별 분포 (건수 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.statusStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.statusStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.count / maxStatusCount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key}</span>
-                      <span className="bar-chart-value">{value.count}건 ({value.amount.toLocaleString()}원)</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #f59e0b, #f97316)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>결재 처리상태별 분포 (건수 기준)</h3>
+          {statusPieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 260 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={statusPieData}
+                    cx="50%" cy="50%"
+                    innerRadius={40} outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {statusPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={countTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* 감면구분별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면구분별 통계 (누적 금액 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.typeStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.typeStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxTypeAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #6366f1, #06b6d4)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면구분별 지분 (금액 기준)</h3>
+          {typePieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 260 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={typePieData}
+                    cx="50%" cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {typePieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* 감면사유별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>감면사유별 통계 (누적 금액 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.reasonStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.reasonStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxReasonAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #ec4899, #8b5cf6)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면사유별 지분 (금액 기준)</h3>
+          {reasonPieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 260 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={reasonPieData}
+                    cx="50%" cy="50%"
+                    innerRadius={30} outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {reasonPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
         {/* 신청자와의 관계별 통계 */}
         <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>대상자 관계별 통계 (누적 금액 기준)</h3>
-          <div className="bar-chart-container">
-            {Object.keys(stats.relationshipStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.relationshipStats).map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxRelationAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #14b8a6, #3b82f6)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>대상자 관계별 지분 (금액 기준)</h3>
+          {relationPieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 260 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={relationPieData}
+                    cx="50%" cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {relationPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
-        {/* 신청 부서별 통계 */}
-        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>신청 부서별 누적 감면 현황</h3>
-          <div className="bar-chart-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {Object.keys(stats.deptStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.deptStats)
-                .sort((a, b) => b[1].amount - a[1].amount) // 금액순 정렬
-                .map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxDeptAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #06b6d4, #10b981)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        {/* 신청 부서별 통계 (상위 8개) */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>신청 부서별 지분 (금액 기준, 상위 8)</h3>
+          {deptPieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 280 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={deptPieData}
+                    cx="50%" cy="50%"
+                    innerRadius={40} outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {deptPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
-        {/* 진료과별 통계 */}
-        <div className="glass-card" style={{ gridColumn: 'span 2' }}>
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>대상 진료과별 누적 감면 현황</h3>
-          <div className="bar-chart-container" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-            {Object.keys(stats.clinicDeptStats).length === 0 ? (
-              <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-            ) : (
-              Object.entries(stats.clinicDeptStats)
-                .sort((a, b) => b[1].amount - a[1].amount) // 금액순 정렬
-                .map(([key, value]) => {
-                const widthPercent = Math.max(5, Math.round((value.amount / maxClinicDeptAmount) * 100));
-                return (
-                  <div key={key} className="bar-chart-row">
-                    <div className="bar-chart-info">
-                      <span className="bar-chart-label">{key} ({value.count}건)</span>
-                      <span className="bar-chart-value">{value.amount.toLocaleString()}원</span>
-                    </div>
-                    <div className="bar-chart-track">
-                      <div className="bar-chart-fill" style={{ width: `${widthPercent}%`, background: 'linear-gradient(to right, #8b5cf6, #ec4899)' }}></div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        {/* 진료과별 통계 (상위 8개) */}
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>진료과별 지분 (금액 기준, 상위 8)</h3>
+          {clinicDeptPieData.length === 0 ? (
+             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+          ) : (
+            <div style={{ width: '100%', height: 280 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={clinicDeptPieData}
+                    cx="50%" cy="50%"
+                    innerRadius={40} outerRadius={80}
+                    dataKey="value"
+                    labelLine={false}
+                    label={renderCustomizedLabel}
+                  >
+                    {clinicDeptPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={customTooltipFormatter} />
+                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
 
       </div>
