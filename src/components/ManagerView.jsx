@@ -673,7 +673,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={statusPieData}
                     cx="50%" cy="50%"
-                    innerRadius={35} outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -702,7 +702,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={typePieData}
                     cx="50%" cy="50%"
-                    outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -731,7 +731,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={reasonPieData}
                     cx="50%" cy="50%"
-                    innerRadius={25} outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -760,7 +760,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={relationPieData}
                     cx="50%" cy="50%"
-                    outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -789,7 +789,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={deptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={35} outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
@@ -818,7 +818,7 @@ export default function ManagerView({ currentUser }) {
                   <Pie
                     data={clinicDeptPieData}
                     cx="50%" cy="50%"
-                    innerRadius={35} outerRadius={70}
+                    innerRadius={30} outerRadius={70}
                     dataKey="value"
                     labelLine={false}
                     label={renderCustomizedLabel}
