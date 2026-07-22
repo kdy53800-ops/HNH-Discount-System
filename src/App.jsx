@@ -50,12 +50,26 @@ export default function App() {
         setSession(currentSession);
         
         if (currentSession?.user) {
-          // 최신 사용자 정보 및 권한 메타데이터 설정
-          setCurrentUser(currentSession.user);
+          // DB의 users 테이블에서 실제 권한 및 상태 정보 조회
+          const { data: dbUser } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', currentSession.user.email)
+            .maybeSingle();
+
+          const mergedUser = {
+            ...currentSession.user,
+            user_metadata: {
+              ...currentSession.user.user_metadata,
+              ...(dbUser || {})
+            }
+          };
+
+          setCurrentUser(mergedUser);
           
           // 권한에 따른 기본 탭 설정
-          const role = currentSession.user.user_metadata?.role;
-          const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true || role === 'superadmin';
+          const role = mergedUser.user_metadata?.role;
+          const isSysAdmin = mergedUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
           
           if (role === 'manager') {
             setActiveTab('manager');
@@ -85,9 +99,23 @@ export default function App() {
     const { data: { session: currentSession } } = await supabase.auth.getSession();
     setSession(currentSession);
     if (currentSession?.user) {
-      setCurrentUser(currentSession.user);
-      const role = currentSession.user.user_metadata?.role;
-      const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true || role === 'superadmin';
+      const { data: dbUser } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', currentSession.user.email)
+        .maybeSingle();
+
+      const mergedUser = {
+        ...currentSession.user,
+        user_metadata: {
+          ...currentSession.user.user_metadata,
+          ...(dbUser || {})
+        }
+      };
+
+      setCurrentUser(mergedUser);
+      const role = mergedUser.user_metadata?.role;
+      const isSysAdmin = mergedUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
       if (role === 'manager') {
         setActiveTab('manager');
       } else if (role === 'admin') {
