@@ -208,8 +208,20 @@ export default function App() {
           <nav className="nav-links">
             {/* 신청자는 단일 화면이므로 상단 메뉴 탭을 아예 노출하지 않음 */}
 
+            {/* 팀 관리자는 권한 관리와 감면 등록 탭 노출 */}
+            {role === 'team_manager' && !isSysAdmin && (
+              <>
+                <button 
+                  onClick={() => { setActiveTab('applicant'); setIsMobileMenuOpen(false); }} 
+                  className={`nav-item ${activeTab === 'applicant' ? 'active' : ''}`}
+                >
+                  감면 등록
+                </button>
+              </>
+            )}
+
             {/* 원무팀은 신청 및 원무 처리 탭 선택 가능 */}
-            {role === 'admin' && (
+            {role === 'admin' && !isSysAdmin && (
               <>
                 <button 
                   onClick={() => { setActiveTab('admin'); setIsMobileMenuOpen(false); }} 
