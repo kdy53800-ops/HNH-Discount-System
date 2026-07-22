@@ -55,8 +55,8 @@ export default function ManagerView({ currentUser }) {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
-  // 차트 색상 팔레트
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#a855f7', '#ec4899', '#f43f5e', '#14b8a6', '#6366f1'];
+  // 차트 색상 팔레트 (지정된 브랜드 컬러 및 파생 색상)
+  const COLORS = ['#004680', '#39a845', '#ffca4b', '#2a6b9c', '#5ab764', '#ffd36c', '#558fb8', '#7bc584', '#ffdc8c'];
 
   useEffect(() => {
     fetchMasterData();
@@ -645,8 +645,8 @@ export default function ManagerView({ currentUser }) {
                     labelStyle={{ fontWeight: 'bold' }}
                   />
                   <Legend verticalAlign="top" height={36}/>
-                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#ec4899" strokeWidth={3} />
+                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#004680" strokeWidth={3} activeDot={{ r: 8 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#39a845" strokeWidth={3} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
