@@ -93,9 +93,13 @@ export default function ApplicantView({ currentUser }) {
       if (error) throw error;
       setRequestList(data || []);
 
-      // 보완요청/반려 알림 로직
-      const alerts = (data || []).filter(req => req.status === '보완요청' || req.status === '반려');
-      if (alerts.length > 0) {
+      // 보완요청/반려 알림 로직 (이미 확인 완료한 건은 재노출 방지)
+      const dismissedIds = JSON.parse(localStorage.getItem(`dismissed_alerts_${applicantEmail}`) || '[]');
+      const unreadAlerts = (data || []).filter(req => 
+        (req.status === '보완요청' || req.status === '반려') && !dismissedIds.includes(req.id)
+      );
+
+      if (unreadAlerts.length > 0) {
         const hideUntilStr = localStorage.getItem(`alert_hidden_until_${applicantEmail}`);
         let shouldShow = true;
         if (hideUntilStr) {
@@ -105,7 +109,7 @@ export default function ApplicantView({ currentUser }) {
           }
         }
         if (shouldShow) {
-          setAlertRequests(alerts);
+          setAlertRequests(unreadAlerts);
           setShowAlertModal(true);
         }
       }
@@ -116,8 +120,28 @@ export default function ApplicantView({ currentUser }) {
     }
   };
 
+  // 알림 확인 처리 헬퍼
+  const dismissAlert = (reqId) => {
+    if (!applicantEmail) return;
+    const key = `dismissed_alerts_${applicantEmail}`;
+    const current = JSON.parse(localStorage.getItem(key) || '[]');
+    if (!current.includes(reqId)) {
+      localStorage.setItem(key, JSON.stringify([...current, reqId]));
+    }
+  };
+
+  const dismissAllAlerts = (alertsToDismiss) => {
+    if (!applicantEmail || !alertsToDismiss.length) return;
+    const key = `dismissed_alerts_${applicantEmail}`;
+    const current = JSON.parse(localStorage.getItem(key) || '[]');
+    const idsToDismiss = alertsToDismiss.map(a => a.id);
+    const updated = Array.from(new Set([...current, ...idsToDismiss]));
+    localStorage.setItem(key, JSON.stringify(updated));
+  };
+
   // 신청 행 클릭 시 상세 모달 열기 및 수정 폼 값 로딩
   const handleRowClick = async (id) => {
+    dismissAlert(id);
     try {
       const { data, error } = await supabase
         .from('discount_requests')
@@ -720,6 +744,7 @@ export default function ApplicantView({ currentUser }) {
                     <li 
                       key={req.id} 
                       onClick={() => {
+                        dismissAlert(req.id);
                         setShowAlertModal(false);
                         handleRowClick(req.id);
                       }}
@@ -748,6 +773,7 @@ export default function ApplicantView({ currentUser }) {
                 <label style={{ fontSize: '13px', display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#64748b' }}>
                   <input type="checkbox" style={{ marginRight: '6px' }} onChange={(e) => {
                     if (e.target.checked) {
+                      dismissAllAlerts(alertRequests);
                       const tomorrow = new Date();
                       tomorrow.setHours(23, 59, 59, 999);
                       localStorage.setItem(`alert_hidden_until_${applicantEmail}`, tomorrow.toISOString());
@@ -758,7 +784,10 @@ export default function ApplicantView({ currentUser }) {
                 </label>
                 <button 
                   className="btn btn-primary" 
-                  onClick={() => setShowAlertModal(false)}
+                  onClick={() => {
+                    dismissAllAlerts(alertRequests);
+                    setShowAlertModal(false);
+                  }}
                 >
                   닫기
                 </button>
