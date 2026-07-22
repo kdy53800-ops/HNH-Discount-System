@@ -96,8 +96,15 @@ export default function ApplicantView({ currentUser }) {
       // 보완요청/반려 알림 로직
       const alerts = (data || []).filter(req => req.status === '보완요청' || req.status === '반려');
       if (alerts.length > 0) {
-        const hasSeen = sessionStorage.getItem(`alert_seen_${applicantEmail}`);
-        if (!hasSeen) {
+        const hideUntilStr = localStorage.getItem(`alert_hidden_until_${applicantEmail}`);
+        let shouldShow = true;
+        if (hideUntilStr) {
+          const hideUntil = new Date(hideUntilStr);
+          if (new Date() < hideUntil) {
+            shouldShow = false;
+          }
+        }
+        if (shouldShow) {
           setAlertRequests(alerts);
           setShowAlertModal(true);
         }
@@ -702,10 +709,7 @@ export default function ApplicantView({ currentUser }) {
           <div className="modal-content glass-card" style={{ maxWidth: '400px', width: '90%' }}>
             <div className="modal-header">
               <h2 className="log-section-title" style={{ fontSize: '18px', color: '#e11d48', borderBottom: 'none', margin: 0, padding: 0 }}>⚠️ 확인 필요한 신청 내역</h2>
-              <button className="close-btn" onClick={() => {
-                setShowAlertModal(false);
-                sessionStorage.setItem(`alert_seen_${applicantEmail}`, 'true');
-              }}>
+              <button className="close-btn" onClick={() => setShowAlertModal(false)}>
                 <span className="material-icons">close</span>
               </button>
             </div>
@@ -716,22 +720,50 @@ export default function ApplicantView({ currentUser }) {
               <div style={{ background: 'rgba(0,0,0,0.02)', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
                 <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
                   {alertRequests.map(req => (
-                    <li key={req.id} style={{ marginBottom: '8px', fontSize: '14px', display: 'flex', justifyContent: 'space-between' }}>
+                    <li 
+                      key={req.id} 
+                      onClick={() => {
+                        setShowAlertModal(false);
+                        handleRowClick(req.id);
+                      }}
+                      style={{ 
+                        marginBottom: '8px', 
+                        fontSize: '14px', 
+                        display: 'flex', 
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        padding: '8px',
+                        borderRadius: '4px',
+                        background: '#fff',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                      onMouseOut={(e) => e.currentTarget.style.background = '#fff'}
+                    >
                       <span><strong>{req.patient_name}</strong> 환자</span>
                       <span style={{ fontWeight: 'bold', color: req.status === '반려' ? '#e11d48' : '#ca8a04' }}>{req.status}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontSize: '13px', display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#64748b' }}>
+                  <input type="checkbox" style={{ marginRight: '6px' }} onChange={(e) => {
+                    if (e.target.checked) {
+                      const tomorrow = new Date();
+                      tomorrow.setHours(23, 59, 59, 999);
+                      localStorage.setItem(`alert_hidden_until_${applicantEmail}`, tomorrow.toISOString());
+                      setShowAlertModal(false);
+                    }
+                  }} />
+                  오늘 하루 보지 않기
+                </label>
                 <button 
                   className="btn btn-primary" 
-                  onClick={() => {
-                    setShowAlertModal(false);
-                    sessionStorage.setItem(`alert_seen_${applicantEmail}`, 'true');
-                  }}
+                  onClick={() => setShowAlertModal(false)}
                 >
-                  확인했습니다
+                  닫기
                 </button>
               </div>
             </div>
