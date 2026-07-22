@@ -709,9 +709,6 @@ export default function ApplicantView({ currentUser }) {
           <div className="modal-content glass-card" style={{ maxWidth: '400px', width: '90%' }}>
             <div className="modal-header">
               <h2 className="log-section-title" style={{ fontSize: '18px', color: '#e11d48', borderBottom: 'none', margin: 0, padding: 0 }}>⚠️ 확인 필요한 신청 내역</h2>
-              <button className="close-btn" onClick={() => setShowAlertModal(false)}>
-                <span className="material-icons">close</span>
-              </button>
             </div>
             <div className="modal-body" style={{ padding: '20px 0' }}>
               <p style={{ marginBottom: '16px', fontSize: '14px', lineHeight: '1.5' }}>
