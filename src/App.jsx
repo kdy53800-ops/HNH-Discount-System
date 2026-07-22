@@ -67,11 +67,14 @@ export default function App() {
 
           setCurrentUser(mergedUser);
           
-          // 권한에 따른 기본 탭 설정
+          // 권한 및 세션에 따른 탭 설정 (기존에 보고 있던 탭이 있으면 유지)
           const role = mergedUser.user_metadata?.role;
           const isSysAdmin = mergedUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
-          
-          if (role === 'manager') {
+          const savedTab = localStorage.getItem('hnh_active_tab');
+
+          if (savedTab) {
+            setActiveTab(savedTab);
+          } else if (role === 'manager') {
             setActiveTab('manager');
           } else if (role === 'admin') {
             setActiveTab('admin');
@@ -92,6 +95,13 @@ export default function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // 탭 이동 시 localStorage 동기화 헬퍼
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    localStorage.setItem('hnh_active_tab', tabName);
+    setIsMobileMenuOpen(false);
+  };
 
   // 세션 강제 갱신용 헬퍼
   const handleSessionRefresh = async () => {
@@ -116,7 +126,11 @@ export default function App() {
       setCurrentUser(mergedUser);
       const role = mergedUser.user_metadata?.role;
       const isSysAdmin = mergedUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
-      if (role === 'manager') {
+      const savedTab = localStorage.getItem('hnh_active_tab');
+
+      if (savedTab) {
+        setActiveTab(savedTab);
+      } else if (role === 'manager') {
         setActiveTab('manager');
       } else if (role === 'admin') {
         setActiveTab('admin');
@@ -133,6 +147,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('hnh_active_tab');
     await supabase.auth.signOut();
     setCurrentUser(null);
     setSession(null);
@@ -240,7 +255,7 @@ export default function App() {
             {role === 'team_manager' && !isSysAdmin && (
               <>
                 <button 
-                  onClick={() => { setActiveTab('applicant'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('applicant')} 
                   className={`nav-item ${activeTab === 'applicant' ? 'active' : ''}`}
                 >
                   감면 등록
@@ -252,13 +267,13 @@ export default function App() {
             {role === 'admin' && !isSysAdmin && (
               <>
                 <button 
-                  onClick={() => { setActiveTab('admin'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('admin')} 
                   className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
                 >
                   처리현황
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('applicant'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('applicant')} 
                   className={`nav-item ${activeTab === 'applicant' ? 'active' : ''}`}
                 >
                   감면 등록
@@ -270,37 +285,37 @@ export default function App() {
             {(role === 'manager' || isSysAdmin) && (
               <>
                 <button 
-                  onClick={() => { setActiveTab('manager'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('manager')} 
                   className={`nav-item ${activeTab === 'manager' ? 'active' : ''}`}
                 >
                   감면 관리
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('admin'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('admin')} 
                   className={`nav-item ${activeTab === 'admin' ? 'active' : ''}`}
                 >
                   처리현황
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('applicant'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('applicant')} 
                   className={`nav-item ${activeTab === 'applicant' ? 'active' : ''}`}
                 >
                   감면 등록
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('clinic-settings'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('clinic-settings')} 
                   className={`nav-item ${activeTab === 'clinic-settings' ? 'active' : ''}`}
                 >
                   진료과 설정
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('department-settings'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('department-settings')} 
                   className={`nav-item ${activeTab === 'department-settings' ? 'active' : ''}`}
                 >
                   소속 부서 설정
                 </button>
                 <button 
-                  onClick={() => { setActiveTab('filter-settings'); setIsMobileMenuOpen(false); }} 
+                  onClick={() => handleTabChange('filter-settings')} 
                   className={`nav-item ${activeTab === 'filter-settings' ? 'active' : ''}`}
                 >
                   필터 설정
@@ -311,7 +326,7 @@ export default function App() {
             {/* 권한 관리 탭 노출 (시스템 관리자, 원무팀 관리자, 팀 관리자) */}
             {(isSysAdmin || role === 'manager' || role === 'team_manager') && (
               <button 
-                onClick={() => { setActiveTab('user-management'); setIsMobileMenuOpen(false); }} 
+                onClick={() => handleTabChange('user-management')} 
                 className={`nav-item ${activeTab === 'user-management' ? 'active' : ''}`}
               >
                 권한 관리
