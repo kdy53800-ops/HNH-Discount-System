@@ -183,6 +183,47 @@ export default function DepartmentSettings() {
     setDragOverDeptId(null);
   };
 
+  const handleMoveOrder = async (dept, direction, e) => {
+    e.stopPropagation();
+    const parentKey = dept.parent_id == null ? null : dept.parent_id;
+    const siblings = departments
+      .filter(d => (d.parent_id == null ? null : d.parent_id) === parentKey)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+
+    const currentIndex = siblings.findIndex(s => s.id === dept.id);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= siblings.length) return;
+
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(currentIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
+
+    // 로컬 상태 업데이트
+    setDepartments(prev => {
+      const next = [...prev];
+      reordered.forEach((item, idx) => {
+        const target = next.find(x => x.id === item.id);
+        if (target) target.order_index = idx;
+      });
+      return next;
+    });
+
+    // DB 업데이트
+    try {
+      for (let idx = 0; idx < reordered.length; idx++) {
+        await supabase
+          .from('departments')
+          .update({ order_index: idx })
+          .eq('id', reordered[idx].id);
+      }
+    } catch (err) {
+      console.error('부서 순서 이동 실패:', err);
+      fetchDepartments(false);
+    }
+  };
+
   const handleDrop = async (e, targetDept) => {
     e.preventDefault();
     e.stopPropagation();
@@ -191,24 +232,39 @@ export default function DepartmentSettings() {
     // 부서 이동 처리
     if (!draggedDept) return;
     if (draggedDept.id === targetDept.id) return;
-    if (draggedDept.parent_id !== targetDept.parent_id) {
-      return; // Only allow reordering within same parent
+    const parentKey = targetDept.parent_id == null ? null : targetDept.parent_id;
+    if ((draggedDept.parent_id == null ? null : draggedDept.parent_id) !== parentKey) {
+      return; // 같은 부모 레벨 내에서 순서 변경
     }
 
-    const currentOrder = draggedDept.order_index ?? 0;
-    const targetOrder = targetDept.order_index ?? 0;
+    const siblings = departments
+      .filter(d => (d.parent_id == null ? null : d.parent_id) === parentKey)
+      .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 
-    // Swap order_index locally
-    setDepartments(prev => prev.map(d => {
-      if (d.id === draggedDept.id) return { ...d, order_index: targetOrder };
-      if (d.id === targetDept.id) return { ...d, order_index: currentOrder };
-      return d;
-    }));
+    const fromIdx = siblings.findIndex(s => s.id === draggedDept.id);
+    const toIdx = siblings.findIndex(s => s.id === targetDept.id);
+    if (fromIdx === -1 || toIdx === -1) return;
 
-    // Update DB
+    const reordered = [...siblings];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+
+    setDepartments(prev => {
+      const next = [...prev];
+      reordered.forEach((item, idx) => {
+        const target = next.find(x => x.id === item.id);
+        if (target) target.order_index = idx;
+      });
+      return next;
+    });
+
     try {
-      await supabase.from('departments').update({ order_index: targetOrder }).eq('id', draggedDept.id);
-      await supabase.from('departments').update({ order_index: currentOrder }).eq('id', targetDept.id);
+      for (let idx = 0; idx < reordered.length; idx++) {
+        await supabase
+          .from('departments')
+          .update({ order_index: idx })
+          .eq('id', reordered[idx].id);
+      }
     } catch (err) {
       console.error('순서 변경 실패:', err);
       fetchDepartments(false);
@@ -294,7 +350,26 @@ export default function DepartmentSettings() {
                 </button>
 
                 {/* 컨트롤 액션 버튼 그룹 */}
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    title="위로 이동"
+                    style={{ padding: '4px 6px' }}
+                    onClick={(e) => handleMoveOrder(dept, 'up', e)}
+                    disabled={index === 0}
+                  >
+                    <ArrowUp size={13} />
+                  </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    title="아래로 이동"
+                    style={{ padding: '4px 6px' }}
+                    onClick={(e) => handleMoveOrder(dept, 'down', e)}
+                    disabled={index === children.length - 1}
+                  >
+                    <ArrowDown size={13} />
+                  </button>
+
                   {dept.level < 5 && (
                     <button 
                       className="btn btn-secondary" 
