@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { PieChart, Pie, Cell, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from 'recharts';
 
 export default function ManagerView({ currentUser }) {
   const [requests, setRequests] = useState([]);
@@ -653,8 +653,12 @@ export default function ManagerView({ currentUser }) {
                     labelStyle={{ fontWeight: 'bold' }}
                   />
                   <Legend verticalAlign="top" height={36}/>
-                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#004680" strokeWidth={3} activeDot={{ r: 8 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#39a845" strokeWidth={3} />
+                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#004680" strokeWidth={3} activeDot={{ r: 8 }}>
+                    <LabelList dataKey="amount" position="top" formatter={(val) => Math.round(val / 10000) + '만'} fontSize={11} fill="#004680" fontWeight="bold" />
+                  </Line>
+                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#39a845" strokeWidth={3}>
+                    <LabelList dataKey="count" position="bottom" formatter={(val) => val + '건'} fontSize={11} fill="#39a845" fontWeight="bold" />
+                  </Line>
                 </LineChart>
               </ResponsiveContainer>
             </div>
