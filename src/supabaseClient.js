@@ -582,7 +582,8 @@ const SEED_USERS = [
   { email: 'team_manager@hospital.com', name: '이팀장', role: 'team_manager', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-00000000002f' },
   { email: 'staff@hospital.com', name: '김원무', role: 'admin', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-000000000046' },
   { email: 'manager@hospital.com', name: '박팀장', role: 'manager', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-000000000046' },
-  { email: 'sysadmin@hospital.com', name: '최관리', role: 'manager', is_sysadmin: true, status: 'approved', department_id: '00000000-0000-0000-0000-000000000048' }
+  { email: 'sysadmin@hospital.com', name: '최관리', role: 'manager', is_sysadmin: true, status: 'approved', department_id: '00000000-0000-0000-0000-000000000048' },
+  { email: 'director@hospital.com', name: '병원장', role: 'superadmin', is_sysadmin: true, status: 'approved', department_id: '00000000-0000-0000-0000-000000000001' }
 ];
 
 // 초기 시드 데이터 로드 유틸리티 (배열이 깨졌거나 비어있으면 재생성)
@@ -622,8 +623,8 @@ function initMockDB() {
     const storedUsers = safeGetItem(MOCK_STORAGE_KEYS.users);
     if (storedUsers) {
       const parsedUsers = JSON.parse(storedUsers);
-      // 구버전(상태 없는 경우)이면 초기화
-      if (parsedUsers.length > 0 && parsedUsers.some(u => u.status === undefined)) {
+      // 구버전(상태 없는 경우) 또는 병원장 계정 없는 경우 초기화
+      if (parsedUsers.length > 0 && (parsedUsers.some(u => u.status === undefined) || !parsedUsers.some(u => u.email === 'director@hospital.com'))) {
         localStorage.removeItem(MOCK_STORAGE_KEYS.users);
       }
     }

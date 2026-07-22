@@ -123,7 +123,8 @@ export default function UserManagement({ currentUser }) {
       applicant: '일반 신청자',
       team_manager: '팀 관리자',
       admin: '원무팀',
-      manager: '원무팀 관리자'
+      manager: '원무팀 관리자',
+      superadmin: '모든 권한자'
     };
     return roles[role] || role;
   };
@@ -252,6 +253,7 @@ export default function UserManagement({ currentUser }) {
                         <option value="team_manager">팀 관리자</option>
                         <option value="admin">원무팀</option>
                         <option value="manager">원무팀 관리자</option>
+                        <option value="superadmin">모든 권한자</option>
                       </select>
                     </td>
                     <td>
@@ -305,6 +307,7 @@ function PendingUserRow({ user, departmentName, onApprove, onReject, actionLoadi
           <option value="team_manager">팀 관리자</option>
           <option value="admin">원무팀</option>
           <option value="manager">원무팀 관리자</option>
+          <option value="superadmin">모든 권한자</option>
         </select>
       </td>
       <td>

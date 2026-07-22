@@ -11,7 +11,8 @@ export default function RoleSimulator({ currentUser, onSessionRefresh }) {
     { name: '팀관리자', email: 'team_manager@hospital.com', roleKey: 'team_manager' },
     { name: '원무팀', email: 'staff@hospital.com', roleKey: 'admin' },
     { name: '원무팀 관리자', email: 'manager@hospital.com', roleKey: 'manager' },
-    { name: '시스템관리자', email: 'sysadmin@hospital.com', roleKey: 'sysadmin' }
+    { name: '시스템관리자', email: 'sysadmin@hospital.com', roleKey: 'sysadmin' },
+    { name: '병원장(모든권한)', email: 'director@hospital.com', roleKey: 'superadmin' }
   ];
 
   const handleRoleSwitch = async (email) => {

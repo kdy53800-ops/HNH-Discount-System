@@ -56,7 +56,7 @@ export default function App() {
           
           // 권한에 따른 기본 탭 설정
           const role = currentSession.user.user_metadata?.role;
-          const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true;
+          const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true || role === 'superadmin';
           
           if (role === 'manager') {
             setActiveTab('manager');
@@ -88,7 +88,7 @@ export default function App() {
     if (currentSession?.user) {
       setCurrentUser(currentSession.user);
       const role = currentSession.user.user_metadata?.role;
-      const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true;
+      const isSysAdmin = currentSession.user.user_metadata?.is_sysadmin === true || role === 'superadmin';
       if (role === 'manager') {
         setActiveTab('manager');
       } else if (role === 'admin') {
@@ -158,7 +158,7 @@ export default function App() {
   }
 
   const role = currentUser.user_metadata?.role || 'applicant';
-  const isSysAdmin = currentUser.user_metadata?.is_sysadmin === true;
+  const isSysAdmin = currentUser.user_metadata?.is_sysadmin === true || role === 'superadmin';
   const roleName = currentUser.user_metadata?.full_name || '사용자';
   const departmentName = currentUser.user_metadata?.department || '일반부서';
   const userStatus = currentUser.user_metadata?.status || 'pending';
