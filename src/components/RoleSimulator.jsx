@@ -6,10 +6,12 @@ export default function RoleSimulator({ currentUser, onSessionRefresh }) {
   if (!isMock) return null;
 
   const roles = [
+    { name: '신규가입', email: 'newbie@hospital.com', roleKey: 'newbie' },
     { name: '신청자', email: 'applicant@hospital.com', roleKey: 'applicant' },
+    { name: '팀관리자', email: 'team_manager@hospital.com', roleKey: 'team_manager' },
     { name: '원무팀', email: 'staff@hospital.com', roleKey: 'admin' },
     { name: '원무팀장', email: 'manager@hospital.com', roleKey: 'manager' },
-    { name: '관리자', email: 'sysadmin@hospital.com', roleKey: 'sysadmin' }
+    { name: '시스템관리자', email: 'sysadmin@hospital.com', roleKey: 'sysadmin' }
   ];
 
   const handleRoleSwitch = async (email) => {

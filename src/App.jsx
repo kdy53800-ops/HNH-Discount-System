@@ -10,6 +10,7 @@ import DepartmentSettings from './components/DepartmentSettings';
 import DepartmentSelect from './components/DepartmentSelect';
 import FilterSettings from './components/FilterSettings';
 import UserManagement from './components/UserManagement';
+import AccessRequestScreen from './components/AccessRequestScreen';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -150,16 +151,29 @@ export default function App() {
   }
 
   const role = currentUser.user_metadata?.role || 'applicant';
+  const isSysAdmin = currentUser.user_metadata?.is_sysadmin === true;
   const roleName = currentUser.user_metadata?.full_name || '사용자';
   const departmentName = currentUser.user_metadata?.department || '일반부서';
+  const userStatus = currentUser.user_metadata?.status || 'pending';
+
+  if (userStatus !== 'approved') {
+    return (
+      <div className="app-container">
+        <main className="main-content">
+          <AccessRequestScreen currentUser={currentUser} onSessionRefresh={handleSessionRefresh} />
+        </main>
+      </div>
+    );
+  }
 
   // 한국어 역할 매칭
-  const getRoleLabel = (r) => {
+  const getRoleLabel = (r, isSys) => {
+    if (isSys) return '관리자';
     const labels = {
       applicant: '신청자',
+      team_manager: '팀 관리자',
       admin: '원무팀',
-      manager: '원무팀장',
-      sysadmin: '관리자'
+      manager: '원무팀장'
     };
     return labels[r] || '일반';
   };
@@ -206,7 +220,7 @@ export default function App() {
             )}
 
             {/* 원무팀장은 결재 대시보드, 원무 업무 조회, 신청 탭 전체 노출 */}
-            {(role === 'manager' || role === 'sysadmin') && (
+            {(role === 'manager' || isSysAdmin) && (
               <>
                 <button 
                   onClick={() => { setActiveTab('manager'); setIsMobileMenuOpen(false); }} 
@@ -248,7 +262,7 @@ export default function App() {
             )}
 
             {/* 시스템 관리자는 권한 관리 탭 추가 노출 */}
-            {role === 'sysadmin' && (
+            {isSysAdmin && (
               <button 
                 onClick={() => { setActiveTab('user-management'); setIsMobileMenuOpen(false); }} 
                 className={`nav-item ${activeTab === 'user-management' ? 'active' : ''}`}
@@ -326,7 +340,7 @@ export default function App() {
         {activeTab === 'clinic-settings' && <ClinicSettings />}
         {activeTab === 'department-settings' && <DepartmentSettings />}
         {activeTab === 'filter-settings' && <FilterSettings />}
-        {activeTab === 'user-management' && <UserManagement />}
+        {activeTab === 'user-management' && <UserManagement currentUser={currentUser} />}
       </main>
 
       {/* 테스트를 원활하게 도와줄 하단 플로팅 역할 체인저 */}

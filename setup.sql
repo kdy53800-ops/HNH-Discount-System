@@ -44,7 +44,9 @@ CREATE TABLE code_options (
 CREATE TABLE users (
     email text PRIMARY KEY, -- 구글 로그인 이메일
     name text NOT NULL,
-    role text NOT NULL CHECK (role IN ('applicant', 'admin', 'manager', 'sysadmin')),
+    role text NOT NULL DEFAULT 'applicant' CHECK (role IN ('applicant', 'team_manager', 'admin', 'manager')),
+    is_sysadmin boolean NOT NULL DEFAULT false,
+    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
     department_id uuid REFERENCES departments(id) ON DELETE SET NULL,
     created_at timestamp with time zone DEFAULT now()
 );
@@ -228,8 +230,9 @@ INSERT INTO code_options (category, code, value, sort_order) VALUES
 ('discount_reason', 'other', '기타 (상세내용 기재 필수)', 6);
 
 -- 4. 테스트 계정 추가 (권한별)
-INSERT INTO users (email, name, role, department_id) VALUES
-('applicant@hospital.com', '홍신청', 'applicant', '00000000-0000-0000-0000-00000000002f'), -- 재활간호팀
-('staff@hospital.com', '김원무', 'admin', '00000000-0000-0000-0000-000000000046'),     -- 원무팀
-('manager@hospital.com', '박팀장', 'manager', '00000000-0000-0000-0000-000000000046'),   -- 원무팀
-('sysadmin@hospital.com', '이관리', 'sysadmin', '00000000-0000-0000-0000-000000000048');  -- 전산팀
+INSERT INTO users (email, name, role, is_sysadmin, status, department_id) VALUES
+('applicant@hospital.com', '홍신청', 'applicant', false, 'approved', '00000000-0000-0000-0000-00000000002f'), -- 재활간호팀
+('team_manager@hospital.com', '이팀장', 'team_manager', false, 'approved', '00000000-0000-0000-0000-00000000002f'), -- 재활간호팀
+('staff@hospital.com', '김원무', 'admin', false, 'approved', '00000000-0000-0000-0000-000000000046'),     -- 원무팀
+('manager@hospital.com', '박팀장', 'manager', false, 'approved', '00000000-0000-0000-0000-000000000046'),   -- 원무팀
+('sysadmin@hospital.com', '최관리', 'manager', true, 'approved', '00000000-0000-0000-0000-000000000048');  -- 전산팀

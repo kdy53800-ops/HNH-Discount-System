@@ -578,10 +578,11 @@ const SEED_CODE_OPTIONS = [
 ];
 
 const SEED_USERS = [
-  { email: 'applicant@hospital.com', name: '홍신청', role: 'applicant', department_id: '00000000-0000-0000-0000-00000000002f' },
-  { email: 'staff@hospital.com', name: '김원무', role: 'admin', department_id: '00000000-0000-0000-0000-000000000046' },
-  { email: 'manager@hospital.com', name: '박팀장', role: 'manager', department_id: '00000000-0000-0000-0000-000000000046' },
-  { email: 'sysadmin@hospital.com', name: '이관리', role: 'sysadmin', department_id: '00000000-0000-0000-0000-000000000048' }
+  { email: 'applicant@hospital.com', name: '홍신청', role: 'applicant', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-00000000002f' },
+  { email: 'team_manager@hospital.com', name: '이팀장', role: 'team_manager', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-00000000002f' },
+  { email: 'staff@hospital.com', name: '김원무', role: 'admin', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-000000000046' },
+  { email: 'manager@hospital.com', name: '박팀장', role: 'manager', is_sysadmin: false, status: 'approved', department_id: '00000000-0000-0000-0000-000000000046' },
+  { email: 'sysadmin@hospital.com', name: '최관리', role: 'manager', is_sysadmin: true, status: 'approved', department_id: '00000000-0000-0000-0000-000000000048' }
 ];
 
 // 초기 시드 데이터 로드 유틸리티 (배열이 깨졌거나 비어있으면 재생성)
@@ -1131,10 +1132,20 @@ const mockSupabase = {
     mockLogin: async (email) => {
       initMockDB();
       const users = getMockData('users');
-      const userRecord = users.find(u => u.email === email);
+      let userRecord = users.find(u => u.email === email);
       
       if (!userRecord) {
-        return { error: { message: '존재하지 않는 가상 계정입니다.' } };
+        // 존재하지 않으면 가입/대기 상태로 생성
+        userRecord = {
+          email: email,
+          name: email.split('@')[0],
+          role: 'applicant',
+          is_sysadmin: false,
+          status: 'pending',
+          department_id: null
+        };
+        users.push(userRecord);
+        saveMockData('users', users);
       }
       
       const depts = JSON.parse(localStorage.getItem(MOCK_STORAGE_KEYS.departments) || '[]');
@@ -1149,6 +1160,8 @@ const mockSupabase = {
           user_metadata: {
             full_name: userRecord.name,
             role: userRecord.role,
+            is_sysadmin: userRecord.is_sysadmin,
+            status: userRecord.status,
             department_id: userRecord.department_id,
             department: deptName
           }

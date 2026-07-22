@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-export default function UserManagement() {
+export default function UserManagement({ currentUser }) {
   const [users, setUsers] = useState([]);
   const [departments, setDepartments] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deptSearchQuery, setDeptSearchQuery] = useState('');
+
+  const currentUserRole = currentUser?.user_metadata?.role;
+  const isSysAdmin = currentUser?.user_metadata?.is_sysadmin === true;
+  const currentUserDeptId = currentUser?.user_metadata?.department_id;
 
   useEffect(() => {
     fetchData();
@@ -58,18 +62,81 @@ export default function UserManagement() {
     }
   };
 
+  const handleSysAdminToggle = async (email, currentVal) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ is_sysadmin: !currentVal })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert('시스템 관리자 권한이 변경되었습니다.');
+      await fetchData();
+    } catch (err) {
+      alert(`권한 변경 중 오류: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApprove = async (email, assignedRole) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ status: 'approved', role: assignedRole })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert('사용권한이 승인되었습니다.');
+      await fetchData();
+    } catch (err) {
+      alert(`승인 처리 중 오류: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async (email) => {
+    if (!window.confirm('정말 이 사용자의 권한 신청을 거절하시겠습니까?')) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ status: 'rejected' })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert('신청이 반려/거절되었습니다.');
+      await fetchData();
+    } catch (err) {
+      alert(`반려 처리 중 오류: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // 역할을 한글로 변환해주는 헬퍼
   const getRoleLabel = (role) => {
     const roles = {
       applicant: '일반 신청자',
+      team_manager: '팀 관리자',
       admin: '원무팀',
-      manager: '원무팀장',
-      sysadmin: '시스템 관리자'
+      manager: '원무팀장'
     };
     return roles[role] || role;
   };
 
-  const filteredUsers = users.filter(user => {
+  // 승인 대기 목록 필터링 (팀 관리자는 본인 부서만, 원무팀장/시스템관리자는 전체 조회)
+  const pendingUsers = users.filter(u => u.status === 'pending').filter(u => {
+    if (isSysAdmin || currentUserRole === 'manager') return true;
+    if (currentUserRole === 'team_manager' && u.department_id === currentUserDeptId) return true;
+    return false;
+  });
+
+  // 일반 사용자 목록 필터링 (승인 완료 또는 거절된 사용자)
+  const filteredUsers = users.filter(u => u.status !== 'pending').filter(user => {
     const matchName = user.name.toLowerCase().includes(searchQuery.toLowerCase());
     const deptName = departments[user.department_id] || '부서 미지정';
     const matchDept = deptName.toLowerCase().includes(deptSearchQuery.toLowerCase());
@@ -78,10 +145,51 @@ export default function UserManagement() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      
+      {/* 권한 승인 대기 목록 */}
+      <div className="glass-card">
+        <h2 className="log-section-title" style={{ fontSize: '18px', margin: '0 0 16px 0', color: '#b91c1c' }}>
+          권한 승인 대기 목록 ({pendingUsers.length}건)
+        </h2>
+        {loading ? (
+          <div className="empty-state">로딩 중...</div>
+        ) : pendingUsers.length === 0 ? (
+          <div className="empty-state">현재 승인 대기 중인 사용자가 없습니다.</div>
+        ) : (
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>요청일시</th>
+                  <th>이메일 (ID)</th>
+                  <th>이름</th>
+                  <th>신청 소속 부서</th>
+                  <th>권한 부여 (승인 시)</th>
+                  <th>승인 처리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingUsers.map(user => (
+                  <PendingUserRow 
+                    key={user.email} 
+                    user={user} 
+                    departmentName={departments[user.department_id]}
+                    onApprove={handleApprove}
+                    onReject={handleReject}
+                    actionLoading={actionLoading}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* 시스템 가입 사용자 관리 (기존) */}
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
           <h2 className="log-section-title" style={{ fontSize: '18px', margin: 0 }}>
-            시스템 가입 사용자 및 권한 관리
+            가입된 사용자 관리
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -121,8 +229,9 @@ export default function UserManagement() {
                   <th>이메일 (ID)</th>
                   <th>이름</th>
                   <th>소속 부서</th>
-                  <th>권한 (Role)</th>
-                  <th>권한 설정</th>
+                  <th>기본 권한 (Role)</th>
+                  <th>시스템 관리자 여부</th>
+                  <th>상태</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,31 +241,36 @@ export default function UserManagement() {
                     <td>{user.name}</td>
                     <td>{departments[user.department_id] || '부서 미지정'}</td>
                     <td>
-                      <span style={{ 
-                        display: 'inline-block',
-                        padding: '4px 10px', 
-                        borderRadius: '20px', 
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        backgroundColor: user.role === 'sysadmin' ? '#fee2e2' : user.role === 'manager' ? '#fef3c7' : user.role === 'admin' ? '#e0e7ff' : '#f1f5f9',
-                        color: user.role === 'sysadmin' ? '#991b1b' : user.role === 'manager' ? '#92400e' : user.role === 'admin' ? '#3730a3' : '#475569'
-                      }}>
-                        {getRoleLabel(user.role)}
-                      </span>
-                    </td>
-                    <td>
                       <select 
                         className="form-select"
                         value={user.role} 
                         onChange={(e) => handleRoleChange(user.email, e.target.value)}
-                        disabled={actionLoading}
+                        disabled={actionLoading || !isSysAdmin} // Only sysadmin can change role after approval usually, or maybe managers. We restrict to sysadmin for safety unless manager. Let's just disable if action loading for now.
                         style={{ width: '150px', padding: '6px 12px', fontSize: '13px' }}
                       >
                         <option value="applicant">일반 신청자</option>
+                        <option value="team_manager">팀 관리자</option>
                         <option value="admin">원무팀</option>
                         <option value="manager">원무팀장</option>
-                        <option value="sysadmin">시스템 관리자</option>
                       </select>
+                    </td>
+                    <td>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: isSysAdmin ? 'pointer' : 'default' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={user.is_sysadmin} 
+                          onChange={() => handleSysAdminToggle(user.email, user.is_sysadmin)}
+                          disabled={actionLoading || !isSysAdmin}
+                        />
+                        <span style={{ fontSize: '13px', color: user.is_sysadmin ? '#b91c1c' : '#64748b', fontWeight: user.is_sysadmin ? 'bold' : 'normal' }}>
+                          관리자 권한
+                        </span>
+                      </label>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${user.status === 'approved' ? 'status-approved' : 'status-rejected'}`}>
+                        {user.status === 'approved' ? '정상 승인' : '거절됨'}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -166,5 +280,53 @@ export default function UserManagement() {
         )}
       </div>
     </div>
+  );
+}
+
+// 개별 대기자 Row 컴포넌트
+function PendingUserRow({ user, departmentName, onApprove, onReject, actionLoading }) {
+  const [selectedRole, setSelectedRole] = useState('applicant');
+
+  return (
+    <tr>
+      <td>{new Date(user.created_at).toLocaleDateString()}</td>
+      <td>{user.email}</td>
+      <td style={{ fontWeight: 'bold' }}>{user.name}</td>
+      <td>{departmentName || '부서 미지정'}</td>
+      <td>
+        <select 
+          className="form-select"
+          value={selectedRole}
+          onChange={(e) => setSelectedRole(e.target.value)}
+          disabled={actionLoading}
+          style={{ padding: '6px', fontSize: '13px' }}
+        >
+          <option value="applicant">일반 신청자</option>
+          <option value="team_manager">팀 관리자</option>
+          <option value="admin">원무팀</option>
+          <option value="manager">원무팀장</option>
+        </select>
+      </td>
+      <td>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            className="btn btn-primary" 
+            onClick={() => onApprove(user.email, selectedRole)}
+            disabled={actionLoading}
+            style={{ padding: '6px 12px', fontSize: '12px' }}
+          >
+            승인
+          </button>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => onReject(user.email)}
+            disabled={actionLoading}
+            style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}
+          >
+            반려
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
