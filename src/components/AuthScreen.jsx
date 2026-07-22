@@ -128,10 +128,10 @@ export default function AuthScreen({ onSessionRefresh }) {
                 className="mock-account-btn"
               >
                 <div className="mock-account-info">
-                  <span className="mock-account-name">원무팀장 (박팀장 - 원무팀)</span>
+                  <span className="mock-account-name">원무팀 관리자 (박팀장 - 원무팀)</span>
                   <span className="mock-account-email">manager@hospital.com</span>
                 </div>
-                <span className="user-role-badge manager">원무팀장</span>
+                <span className="user-role-badge manager">원무팀 관리자</span>
               </button>
 
               <button 

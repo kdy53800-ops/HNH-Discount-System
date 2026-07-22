@@ -598,7 +598,7 @@ export default function AdminView({ currentUser }) {
                   
                   {isFinalApproved && (
                     <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', padding: '12px', borderRadius: 'var(--radius-sm)', marginBottom: '16px', fontSize: '13px', fontWeight: '500' }}>
-                      ⚠️ 최종 결재가 완료된 건(최종승인/반려)은 직접 수정이 차단되어 있습니다. 정정이 필요할 경우, 원무팀장 권한으로 승인을 취소한 후에만 수정이 가능합니다.
+                      ⚠️ 최종 결재가 완료된 건(최종승인/반려)은 직접 수정이 차단되어 있습니다. 정정이 필요할 경우, 원무팀 관리자 권한으로 승인을 취소한 후에만 수정이 가능합니다.
                     </div>
                   )}
 

@@ -123,12 +123,12 @@ export default function UserManagement({ currentUser }) {
       applicant: '일반 신청자',
       team_manager: '팀 관리자',
       admin: '원무팀',
-      manager: '원무팀장'
+      manager: '원무팀 관리자'
     };
     return roles[role] || role;
   };
 
-  // 승인 대기 목록 필터링 (팀 관리자는 본인 부서만, 원무팀장/시스템관리자는 전체 조회)
+  // 승인 대기 목록 필터링 (팀 관리자는 본인 부서만, 원무팀 관리자/시스템관리자는 전체 조회)
   const pendingUsers = users.filter(u => u.status === 'pending').filter(u => {
     if (isSysAdmin || currentUserRole === 'manager') return true;
     if (currentUserRole === 'team_manager' && u.department_id === currentUserDeptId) return true;
@@ -251,7 +251,7 @@ export default function UserManagement({ currentUser }) {
                         <option value="applicant">일반 신청자</option>
                         <option value="team_manager">팀 관리자</option>
                         <option value="admin">원무팀</option>
-                        <option value="manager">원무팀장</option>
+                        <option value="manager">원무팀 관리자</option>
                       </select>
                     </td>
                     <td>
@@ -304,7 +304,7 @@ function PendingUserRow({ user, departmentName, onApprove, onReject, actionLoadi
           <option value="applicant">일반 신청자</option>
           <option value="team_manager">팀 관리자</option>
           <option value="admin">원무팀</option>
-          <option value="manager">원무팀장</option>
+          <option value="manager">원무팀 관리자</option>
         </select>
       </td>
       <td>

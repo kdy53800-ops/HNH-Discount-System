@@ -180,7 +180,7 @@ export default function App() {
       applicant: '신청자',
       team_manager: '팀 관리자',
       admin: '원무팀',
-      manager: '원무팀장'
+      manager: '원무팀 관리자'
     };
     return labels[r] || '일반';
   };
@@ -238,7 +238,7 @@ export default function App() {
               </>
             )}
 
-            {/* 원무팀장은 결재 대시보드, 원무 업무 조회, 신청 탭 전체 노출 */}
+            {/* 원무팀 관리자는 결재 대시보드, 원무 업무 조회, 신청 탭 전체 노출 */}
             {(role === 'manager' || isSysAdmin) && (
               <>
                 <button 
@@ -280,7 +280,7 @@ export default function App() {
               </>
             )}
 
-            {/* 권한 관리 탭 노출 (시스템 관리자, 원무팀장, 팀 관리자) */}
+            {/* 권한 관리 탭 노출 (시스템 관리자, 원무팀 관리자, 팀 관리자) */}
             {(isSysAdmin || role === 'manager' || role === 'team_manager') && (
               <button 
                 onClick={() => { setActiveTab('user-management'); setIsMobileMenuOpen(false); }} 
