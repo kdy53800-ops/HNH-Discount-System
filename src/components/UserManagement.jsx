@@ -117,6 +117,24 @@ export default function UserManagement({ currentUser }) {
     }
   };
 
+  const handleStatusChange = async (email, newStatus) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ status: newStatus })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert('사용자 상태가 변경되었습니다.');
+      await fetchData();
+    } catch (err) {
+      alert(`상태 변경 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleApproveNameChange = async (email, newName) => {
     setActionLoading(true);
     try {
@@ -397,9 +415,26 @@ export default function UserManagement({ currentUser }) {
                       </label>
                     </td>
                     <td>
-                      <span className={`status-badge ${user.status === 'approved' ? 'status-approved' : 'status-rejected'}`}>
-                        {user.status === 'approved' ? '정상 승인' : '거절됨'}
-                      </span>
+                      <select
+                        className="form-select"
+                        value={user.status}
+                        onChange={(e) => handleStatusChange(user.email, e.target.value)}
+                        disabled={actionLoading}
+                        style={{
+                          width: '120px',
+                          padding: '4px 8px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          color: user.status === 'approved' ? '#15803d' : user.status === 'rejected' ? '#b91c1c' : '#b45309',
+                          backgroundColor: user.status === 'approved' ? '#f0fdf4' : user.status === 'rejected' ? '#fef2f2' : '#fffbe8',
+                          borderColor: user.status === 'approved' ? '#bbf7d0' : user.status === 'rejected' ? '#fecaca' : '#fde68a',
+                          borderRadius: '6px'
+                        }}
+                      >
+                        <option value="approved">정상 승인</option>
+                        <option value="rejected">거절됨</option>
+                        <option value="pending">승인 대기</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
