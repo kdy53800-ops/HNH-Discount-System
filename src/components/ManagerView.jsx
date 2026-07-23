@@ -369,7 +369,7 @@ export default function ManagerView({ currentUser }) {
     document.body.removeChild(link);
   };
 
-  // 엑셀/CSV 파일 파싱
+  // 엑셀/CSV 파일 파싱 (UTF-8/CP949 인코딩 복원 및 위치 기반 폴백 포함)
   const handleImportFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -377,56 +377,81 @@ export default function ManagerView({ currentUser }) {
     setImportFileName(file.name);
     setImportLoading(true);
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
+    const isCsv = file.name.toLowerCase().endsWith('.csv');
+
+    const processWorkbook = (workbook) => {
       try {
-        const data = new Uint8Array(evt.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawJson = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
 
-        if (rawJson.length < 2) {
+        if (!rawJson || rawJson.length === 0) {
           alert('파일에 데이터가 존재하지 않습니다.');
           setImportLoading(false);
           return;
         }
 
-        // 헤더 행 위치 찾기
-        let headerRowIndex = 0;
-        for (let i = 0; i < Math.min(rawJson.length, 5); i++) {
-          const rowStr = rawJson[i].join(' ');
-          if (rowStr.includes('신청날짜') || rowStr.includes('병록번호') || rowStr.includes('성명') || rowStr.includes('신청인')) {
+        // 헤더 행 위치 탐색 (키워드 매칭)
+        let headerRowIndex = -1;
+        const keywords = ['신청', '날짜', '병록', '성명', '환자', '진료', '할인', '비고', '소속', '이름', '사유', '관계', '부문', '구분'];
+
+        for (let i = 0; i < Math.min(rawJson.length, 10); i++) {
+          const rowStr = rawJson[i].map(c => String(c)).join(' ');
+          const matchCount = keywords.filter(k => rowStr.includes(k)).length;
+          if (matchCount >= 2) {
             headerRowIndex = i;
             break;
+          }
+        }
+
+        // 키워드 탐색 실패 시 헤더 행 폴백 (1행 또는 0행 중 채워진 컬럼이 더 많은 행)
+        if (headerRowIndex === -1) {
+          headerRowIndex = 0;
+          if (rawJson.length > 1) {
+            const count0 = rawJson[0].filter(c => String(c).trim()).length;
+            const count1 = rawJson[1].filter(c => String(c).trim()).length;
+            if (count1 > count0) headerRowIndex = 1;
           }
         }
 
         const headers = rawJson[headerRowIndex].map(h => String(h).trim());
         const dataRows = rawJson.slice(headerRowIndex + 1);
 
-        const findColIndex = (keywords) => headers.findIndex(h => keywords.some(k => h.toLowerCase().includes(k.toLowerCase())));
+        const findColIndex = (kwList, defaultIdx) => {
+          const foundIdx = headers.findIndex(h => kwList.some(k => h.toLowerCase().includes(k.toLowerCase())));
+          return foundIdx !== -1 ? foundIdx : defaultIdx;
+        };
 
-        const idxDate = findColIndex(['신청날짜', '신청일자', '신청일']);
-        const idxType = findColIndex(['감면부문', '감면구분', '구분']);
-        const idxClinicDate = findColIndex(['진료일자', '진료일']);
-        const idxPatientNo = findColIndex(['병록번호', '등록번호']);
-        const idxPatientName = findColIndex(['성명', '대상자', '환자명']);
-        const idxClinicDept = findColIndex(['진료과']);
-        const idxAmount = findColIndex(['비고', '할인금액', '감면금액', '금액']);
-        const idxReason = findColIndex(['신청사유', '사유']);
-        const idxApplicantDept = findColIndex(['신청인 소속', '신청인소속', '소속']);
-        const idxApplicantName = findColIndex(['신청인 이름', '신청인이름', '신청자']);
-        const idxRelation = findColIndex(['관계']);
+        // 컬럼 위치 탐색 (헤더명 매핑 or 구글 시트 양식 기본 순서 0..10)
+        const idxDate = findColIndex(['신청날짜', '신청일자', '신청일'], 0);
+        const idxType = findColIndex(['감면부문', '감면구분', '구분'], 1);
+        const idxClinicDate = findColIndex(['진료일자', '진료일'], 2);
+        const idxPatientNo = findColIndex(['병록번호', '등록번호'], 3);
+        const idxPatientName = findColIndex(['성명', '대상자', '환자명'], 4);
+        const idxClinicDept = findColIndex(['진료과'], 5);
+        const idxAmount = findColIndex(['비고', '할인금액', '감면금액', '금액'], 6);
+        const idxReason = findColIndex(['신청사유', '사유'], 7);
+        const idxApplicantDept = findColIndex(['신청인 소속', '신청인소속', '소속'], 8);
+        const idxApplicantName = findColIndex(['신청인 이름', '신청인이름', '신청자'], 9);
+        const idxRelation = findColIndex(['관계'], 10);
 
         const formatted = [];
 
         dataRows.forEach((row) => {
           if (!row || row.length === 0) return;
 
-          const patientName = idxPatientName !== -1 ? String(row[idxPatientName] || '').trim() : '';
-          const patientNo = idxPatientNo !== -1 ? String(row[idxPatientNo] || '').trim() : '';
+          // 모든 셀이 비어있으면 스킵
+          const hasContent = row.some(cell => String(cell).trim() !== '');
+          if (!hasContent) return;
 
-          if (!patientName && !patientNo) return;
+          const getCellVal = (idx) => (idx !== -1 && idx < row.length ? String(row[idx] || '').trim() : '');
+
+          const patientName = getCellVal(idxPatientName);
+          const patientNo = getCellVal(idxPatientNo);
+          const rawDate = getCellVal(idxDate);
+          const rawAmount = getCellVal(idxAmount);
+
+          // 헤더 행 재등장 시 스킵
+          if (patientName === '성명' || patientNo === '병록번호' || rawDate === '신청날짜') return;
 
           const parseDateStr = (val) => {
             if (!val) return new Date().toISOString().split('T')[0];
@@ -445,22 +470,26 @@ export default function ManagerView({ currentUser }) {
           };
 
           formatted.push({
-            created_at: idxDate !== -1 && row[idxDate] ? new Date(parseDateStr(row[idxDate])).toISOString() : new Date().toISOString(),
-            discount_type: idxType !== -1 && row[idxType] ? String(row[idxType]).trim() : '외래',
-            clinic_date: idxClinicDate !== -1 ? parseDateStr(row[idxClinicDate]) : '',
-            patient_no: patientNo,
-            patient_name: patientName,
-            clinic_dept: idxClinicDept !== -1 ? String(row[idxClinicDept]).trim() : '미지정',
-            discount_amount: idxAmount !== -1 ? parseAmount(row[idxAmount]) : 0,
-            reason_category: idxReason !== -1 && row[idxReason] ? String(row[idxReason]).trim() : '기타',
-            applicant_dept: idxApplicantDept !== -1 && row[idxApplicantDept] ? String(row[idxApplicantDept]).trim() : '미지정',
-            applicant_name: idxApplicantName !== -1 && row[idxApplicantName] ? String(row[idxApplicantName]).trim() : '과거이관자',
+            created_at: rawDate ? new Date(parseDateStr(rawDate)).toISOString() : new Date().toISOString(),
+            discount_type: getCellVal(idxType) || '외래',
+            clinic_date: parseDateStr(getCellVal(idxClinicDate)),
+            patient_no: patientNo || '미기재',
+            patient_name: patientName || '미상',
+            clinic_dept: getCellVal(idxClinicDept) || '미지정',
+            discount_amount: parseAmount(rawAmount),
+            reason_category: getCellVal(idxReason) || '기타',
+            applicant_dept: getCellVal(idxApplicantDept) || '미지정',
+            applicant_name: getCellVal(idxApplicantName) || '과거이관자',
             applicant_email: 'imported@hnh.local',
-            relationship: idxRelation !== -1 && row[idxRelation] ? String(row[idxRelation]).trim() : '기타',
+            relationship: getCellVal(idxRelation) || '기타',
             status: defaultImportStatus,
             reason_detail: '구글 스프레드시트 과거 내역 일괄 이관'
           });
         });
+
+        if (formatted.length === 0) {
+          alert('파싱 가능한 행이 발견되지 않았습니다. 파일 형식을 확인해주세요.');
+        }
 
         setParsedImportData(formatted);
       } catch (err) {
@@ -469,7 +498,42 @@ export default function ManagerView({ currentUser }) {
         setImportLoading(false);
       }
     };
-    reader.readAsArrayBuffer(file);
+
+    if (isCsv) {
+      // CSV 파일의 경우 FileReader.readAsText로 인코딩 지원
+      const readerText = new FileReader();
+      readerText.onload = (evt) => {
+        try {
+          const text = evt.target.result;
+          const workbook = XLSX.read(text, { type: 'string', raw: true });
+          processWorkbook(workbook);
+        } catch (err) {
+          // UTF-8 실패 시 Binary ArrayBuffer로 2차 시도
+          const readerBin = new FileReader();
+          readerBin.onload = (evtBin) => {
+            const data = new Uint8Array(evtBin.target.result);
+            const workbook = XLSX.read(data, { type: 'array', codepage: 949 });
+            processWorkbook(workbook);
+          };
+          readerBin.readAsArrayBuffer(file);
+        }
+      };
+      readerText.readAsText(file, 'utf-8');
+    } else {
+      // XLSX/XLS 파일의 경우 ArrayBuffer 처리
+      const readerBin = new FileReader();
+      readerBin.onload = (evtBin) => {
+        try {
+          const data = new Uint8Array(evtBin.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          processWorkbook(workbook);
+        } catch (err) {
+          alert(`엑셀 파일 구조 읽기 실패: ${err.message}`);
+          setImportLoading(false);
+        }
+      };
+      readerBin.readAsArrayBuffer(file);
+    }
   };
 
   // DB에 파싱된 데이터 저장
