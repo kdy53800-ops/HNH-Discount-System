@@ -651,7 +651,7 @@ export default function SpecialDiscountView({ currentUser }) {
       {/* 5. 등록 / 수정 모달 */}
       {modalOpen && (
         <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="modal-content" style={{ maxWidth: '600px' }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: '640px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 className="modal-title">
                 {editingItem ? '⭐ 특별 감면 대상 정보 수정' : '⭐ 특별 감면 대상 신규 등록'}
@@ -713,42 +713,42 @@ export default function SpecialDiscountView({ currentUser }) {
                 </div>
 
                 {/* 진료구분별 세부 할인율 입력 섹션 */}
-                <div className="form-group" style={{ gridColumn: 'span 2', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  <label className="form-label" style={{ fontWeight: 'bold', color: '#004680', marginBottom: '8px', display: 'block' }}>
+                <div className="form-group" style={{ gridColumn: 'span 2', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #e2e8f0', boxSizing: 'border-box', width: '100%' }}>
+                  <label className="form-label" style={{ fontWeight: 'bold', color: '#004680', marginBottom: '8px', display: 'block', fontSize: '13px' }}>
                     🩺 진료 구분별 세부 할인율 설정 (외래 / 입원 / 검진 개별 지정 시 입력)
                   </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>외래 할인율</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>외래 할인율</span>
                       <input
                         type="text"
                         value={formData.discount_outpatient}
                         onChange={(e) => setFormData({ ...formData, discount_outpatient: e.target.value })}
                         placeholder="예: 20%"
                         className="form-input"
-                        style={{ fontSize: '12px' }}
+                        style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
                     </div>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>입원 할인율</span>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>입원 할인율</span>
                       <input
                         type="text"
                         value={formData.discount_inpatient}
                         onChange={(e) => setFormData({ ...formData, discount_inpatient: e.target.value })}
                         placeholder="예: 10%"
                         className="form-input"
-                        style={{ fontSize: '12px' }}
+                        style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
                     </div>
-                    <div>
-                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>검진 할인율</span>
+                    <div style={{ minWidth: 0 }}>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px', whiteSpace: 'nowrap' }}>검진 할인율</span>
                       <input
                         type="text"
                         value={formData.discount_checkup}
                         onChange={(e) => setFormData({ ...formData, discount_checkup: e.target.value })}
                         placeholder="예: 30%"
                         className="form-input"
-                        style={{ fontSize: '12px' }}
+                        style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
                     </div>
                   </div>
