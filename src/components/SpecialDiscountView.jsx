@@ -662,49 +662,50 @@ export default function SpecialDiscountView({ currentUser }) {
             <table className="custom-table compact">
               <thead>
                 <tr>
-                  <th style={{ width: '90px' }}>유형</th>
-                  <th onClick={() => handleSort('name')} style={{ cursor: 'pointer' }}>
+                  <th style={{ width: '80px', whiteSpace: 'nowrap' }}>유형</th>
+                  <th onClick={() => handleSort('name')} style={{ cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '120px' }}>
                     이름 / 기관명 {sortField === 'name' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
                   </th>
-                  <th onClick={() => handleSort('chart_no')} style={{ cursor: 'pointer' }}>
+                  <th onClick={() => handleSort('chart_no')} style={{ cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '130px' }}>
                     차트번호 / 대상범위 {sortField === 'chart_no' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
                   </th>
-                  <th>구분</th>
-                  <th onClick={() => handleSort('discount_rate')} style={{ cursor: 'pointer' }}>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '90px' }}>구분</th>
+                  <th onClick={() => handleSort('discount_rate')} style={{ cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '90px' }}>
                     할인율 {sortField === 'discount_rate' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
                   </th>
-                  <th>사유</th>
-                  <th>요청자</th>
-                  <th onClick={() => handleSort('request_date')} style={{ cursor: 'pointer' }}>
-                    요청일자 {sortField === 'request_date' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
-                  </th>
-                  <th>상태</th>
-                  <th style={{ textAlign: 'center' }}>관리</th>
+                  <th style={{ minWidth: '150px' }}>사유</th>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '100px' }}>요청자</th>
+                  <th style={{ whiteSpace: 'nowrap', minWidth: '70px' }}>상태</th>
+                  <th style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '160px' }}>관리</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedData.map((item) => (
                   <tr key={item.id} style={{ opacity: item.status !== '활성' ? 0.6 : 1 }}>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <span style={{ 
                         fontSize: '11px', 
-                        padding: '2px 6px', 
+                        padding: '3px 7px', 
                         borderRadius: '4px', 
                         fontWeight: 'bold',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap',
                         backgroundColor: item.target_type === '개인' ? '#e0f2fe' : '#fef3c7',
                         color: item.target_type === '개인' ? '#0369a1' : '#b45309'
                       }}>
                         {item.target_type}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{item.name}</td>
-                    <td style={{ color: '#0284c7', fontWeight: '600' }}>{item.chart_no || '-'}</td>
-                    <td>
+                    <td style={{ fontWeight: 'bold', color: '#0f172a', whiteSpace: 'nowrap' }}>{item.name}</td>
+                    <td style={{ color: '#0284c7', fontWeight: '600', whiteSpace: 'nowrap' }}>{item.chart_no || '-'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <span style={{ 
                         fontSize: '11px', 
                         padding: '3px 8px', 
                         borderRadius: '6px', 
                         fontWeight: 'bold',
+                        display: 'inline-block',
+                        whiteSpace: 'nowrap',
                         backgroundColor: item.category === '비급여만' ? '#ffedd5' : (item.category === '급여포함' ? '#dcfce7' : '#f1f5f9'),
                         color: item.category === '비급여만' ? '#c2410c' : (item.category === '급여포함' ? '#15803d' : '#475569'),
                         border: item.category === '비급여만' ? '1px solid #fed7aa' : (item.category === '급여포함' ? '1px solid #bbf7d0' : '1px solid #e2e8f0')
@@ -712,7 +713,7 @@ export default function SpecialDiscountView({ currentUser }) {
                         {item.category || '급여포함'}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       {(item.discount_outpatient || item.discount_inpatient || item.discount_checkup) ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px' }}>
                           {item.discount_outpatient && (
@@ -732,27 +733,26 @@ export default function SpecialDiscountView({ currentUser }) {
                           )}
                         </div>
                       ) : (
-                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669', whiteSpace: 'nowrap' }}>
                           {formatRate(item.discount_rate)}
                         </span>
                       )}
                     </td>
-                    <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
+                    <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
                       {item.reason || '-'}
                     </td>
-                    <td style={{ color: '#475569', fontWeight: '500' }}>{item.requester || '-'}</td>
-                    <td>{item.request_date || '-'}</td>
-                    <td>
-                      <span className={`status-badge ${item.status === '활성' ? 'status-최종승인' : 'status-반려'}`} style={{ padding: '2px 6px', fontSize: '11px' }}>
+                    <td style={{ color: '#475569', fontWeight: '500', whiteSpace: 'nowrap' }}>{item.requester || '-'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span className={`status-badge ${item.status === '활성' ? 'status-최종승인' : 'status-반려'}`} style={{ padding: '3px 8px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }}>
                         {item.status}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                         <button 
                           onClick={() => handleOpenHistoryModal(item)} 
                           className="btn btn-secondary"
-                          style={{ padding: '3px 8px', fontSize: '12px', color: '#0369a1', borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}
+                          style={{ padding: '3px 8px', fontSize: '12px', color: '#0369a1', borderColor: '#bae6fd', backgroundColor: '#f0f9ff', whiteSpace: 'nowrap' }}
                           title="변경 이력 타임라인 보기"
                         >
                           📋 이력
@@ -760,14 +760,14 @@ export default function SpecialDiscountView({ currentUser }) {
                         <button 
                           onClick={() => handleOpenEditModal(item)} 
                           className="btn btn-secondary"
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
+                          style={{ padding: '3px 8px', fontSize: '12px', whiteSpace: 'nowrap' }}
                         >
                           수정
                         </button>
                         <button 
                           onClick={() => handleDeleteItem(item.id, item.name)} 
                           className="btn btn-danger"
-                          style={{ padding: '3px 8px', fontSize: '12px' }}
+                          style={{ padding: '3px 8px', fontSize: '12px', whiteSpace: 'nowrap' }}
                         >
                           삭제
                         </button>
