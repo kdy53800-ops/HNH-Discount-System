@@ -8,6 +8,8 @@ export default function UserManagement({ currentUser }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deptSearchQuery, setDeptSearchQuery] = useState('');
+  const [sortField, setSortField] = useState('email');
+  const [sortOrder, setSortOrder] = useState('asc');
 
   const currentUserRole = currentUser?.user_metadata?.role;
   const isSysAdmin = currentUser?.user_metadata?.is_sysadmin === true;
@@ -197,6 +199,35 @@ export default function UserManagement({ currentUser }) {
     return roles[role] || role;
   };
 
+  // 컬럼 헤더 클릭 시 정렬 핑퐁
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 정렬 헤더 Cell 렌더링 헬퍼
+  const renderSortHeader = (field, label) => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)} 
+        style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.15s' }}
+        title={`${label} 기준 ${isActive && sortOrder === 'asc' ? '내림차순' : '오름차순'} 정렬`}
+      >
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <span>{label}</span>
+          <span style={{ fontSize: '12px', color: isActive ? '#004680' : '#9ca3af', fontWeight: 'bold' }}>
+            {isActive ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
   // 승인 대기 목록 필터링 (팀 관리자는 소속 부서 상관없이 전체 조회 및 승인 가능)
   const pendingUsers = users.filter(u => u.status === 'pending').filter(u => {
     if (isSysAdmin || currentUserRole === 'manager' || currentUserRole === 'team_manager') return true;
@@ -209,13 +240,52 @@ export default function UserManagement({ currentUser }) {
     return false;
   });
 
-  // 일반 사용자 목록 필터링 (승인 완료 또는 거절된 사용자)
-  const filteredUsers = users.filter(u => u.status !== 'pending').filter(user => {
-    const matchName = (user.name + (user.requested_name || '')).toLowerCase().includes(searchQuery.toLowerCase());
-    const deptName = departments[user.department_id] || '부서 미지정';
-    const matchDept = deptName.toLowerCase().includes(deptSearchQuery.toLowerCase());
-    return matchName && matchDept;
-  });
+  // 일반 사용자 목록 필터링 및 정렬 (승인 완료 또는 거절된 사용자)
+  const filteredUsers = users
+    .filter(u => u.status !== 'pending')
+    .filter(user => {
+      const matchName = (user.name + (user.requested_name || '')).toLowerCase().includes(searchQuery.toLowerCase());
+      const deptName = departments[user.department_id] || '부서 미지정';
+      const matchDept = deptName.toLowerCase().includes(deptSearchQuery.toLowerCase());
+      return matchName && matchDept;
+    })
+    .sort((a, b) => {
+      let aVal = '';
+      let bVal = '';
+
+      switch (sortField) {
+        case 'email':
+          aVal = a.email || '';
+          bVal = b.email || '';
+          break;
+        case 'name':
+          aVal = a.name || '';
+          bVal = b.name || '';
+          break;
+        case 'dept':
+          aVal = departments[a.department_id] || '부서 미지정';
+          bVal = departments[b.department_id] || '부서 미지정';
+          break;
+        case 'role':
+          aVal = getRoleLabel(a.role) || '';
+          bVal = getRoleLabel(b.role) || '';
+          break;
+        case 'sysadmin':
+          aVal = a.is_sysadmin ? '1' : '0';
+          bVal = b.is_sysadmin ? '1' : '0';
+          break;
+        case 'status':
+          aVal = a.status || '';
+          bVal = b.status || '';
+          break;
+        default:
+          aVal = a.email || '';
+          bVal = b.email || '';
+      }
+
+      const comparison = aVal.localeCompare(bVal, 'ko', { numeric: true, sensitivity: 'base' });
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -358,12 +428,12 @@ export default function UserManagement({ currentUser }) {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>이메일 (ID)</th>
-                  <th>이름</th>
-                  <th>소속 부서</th>
-                  <th>기본 권한 (Role)</th>
-                  <th>시스템 관리자 여부</th>
-                  <th>상태</th>
+                  {renderSortHeader('email', '이메일 (ID)')}
+                  {renderSortHeader('name', '이름')}
+                  {renderSortHeader('dept', '소속 부서')}
+                  {renderSortHeader('role', '기본 권한 (Role)')}
+                  {renderSortHeader('sysadmin', '시스템 관리자 여부')}
+                  {renderSortHeader('status', '상태')}
                 </tr>
               </thead>
               <tbody>
