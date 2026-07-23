@@ -483,7 +483,8 @@ export default function ManagerView({ currentUser }) {
             applicant_email: 'imported@hnh.local',
             relationship: getCellVal(idxRelation) || '기타',
             status: defaultImportStatus,
-            reason_detail: '구글 스프레드시트 과거 내역 일괄 이관'
+            details: '구글 스프레드시트 과거 내역 일괄 이관',
+            admin_notes: '구글 스프레드시트 과거 내역 일괄 이관'
           });
         });
 
