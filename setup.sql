@@ -44,6 +44,7 @@ CREATE TABLE code_options (
 CREATE TABLE users (
     email text PRIMARY KEY, -- 구글 로그인 이메일
     name text NOT NULL,
+    requested_name text, -- 이름 변경 요청 (관리자 승인 대기)
     role text NOT NULL DEFAULT 'applicant' CHECK (role IN ('applicant', 'team_manager', 'admin', 'manager')),
     is_sysadmin boolean NOT NULL DEFAULT false,
     status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
@@ -246,3 +247,7 @@ INSERT INTO users (email, name, role, is_sysadmin, status, department_id) VALUES
 ('staff@hospital.com', '김원무', 'admin', false, 'approved', '00000000-0000-0000-0000-000000000046'),     -- 원무팀
 ('manager@hospital.com', '박팀장', 'manager', false, 'approved', '00000000-0000-0000-0000-000000000046'),   -- 원무팀
 ('sysadmin@hospital.com', '최관리', 'manager', true, 'approved', '00000000-0000-0000-0000-000000000048');  -- 전산팀
+
+-- 기존 데이터베이스 마이그레이션용 컬럼 추가
+ALTER TABLE users ADD COLUMN IF NOT EXISTS requested_name text;
+

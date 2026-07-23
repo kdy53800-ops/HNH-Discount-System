@@ -117,6 +117,43 @@ export default function UserManagement({ currentUser }) {
     }
   };
 
+  const handleApproveNameChange = async (email, newName) => {
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ name: newName, requested_name: null })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert(`성명이 '${newName}'(으)로 변경 승인되었습니다.`);
+      await fetchData();
+    } catch (err) {
+      alert(`이름 변경 승인 중 오류: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectNameChange = async (email) => {
+    if (!window.confirm('이름 변경 신청을 반려하시겠습니까?')) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ requested_name: null })
+        .eq('email', email);
+      
+      if (error) throw error;
+      alert('이름 변경 신청이 반려되었습니다.');
+      await fetchData();
+    } catch (err) {
+      alert(`이름 변경 반려 중 오류: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // 역할을 한글로 변환해주는 헬퍼
   const getRoleLabel = (role) => {
     const roles = {
@@ -136,9 +173,16 @@ export default function UserManagement({ currentUser }) {
     return false;
   });
 
+  // 이름 변경 승인 대기 목록 필터링
+  const pendingNameUsers = users.filter(u => u.requested_name && u.requested_name !== u.name).filter(u => {
+    if (isSysAdmin || currentUserRole === 'manager') return true;
+    if (currentUserRole === 'team_manager' && u.department_id === currentUserDeptId) return true;
+    return false;
+  });
+
   // 일반 사용자 목록 필터링 (승인 완료 또는 거절된 사용자)
   const filteredUsers = users.filter(u => u.status !== 'pending').filter(user => {
-    const matchName = user.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchName = (user.name + (user.requested_name || '')).toLowerCase().includes(searchQuery.toLowerCase());
     const deptName = departments[user.department_id] || '부서 미지정';
     const matchDept = deptName.toLowerCase().includes(deptSearchQuery.toLowerCase());
     return matchName && matchDept;
@@ -155,7 +199,7 @@ export default function UserManagement({ currentUser }) {
         {loading ? (
           <div className="empty-state">로딩 중...</div>
         ) : pendingUsers.length === 0 ? (
-          <div className="empty-state">현재 승인 대기 중인 사용자가 없습니다.</div>
+          <div className="empty-state">현재 권한 승인 대기 중인 사용자가 없습니다.</div>
         ) : (
           <div className="table-responsive">
             <table className="custom-table">
@@ -179,6 +223,64 @@ export default function UserManagement({ currentUser }) {
                     onReject={handleReject}
                     actionLoading={actionLoading}
                   />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* 이름 변경 승인 대기 목록 */}
+      <div className="glass-card">
+        <h2 className="log-section-title" style={{ fontSize: '18px', margin: '0 0 16px 0', color: '#0284c7' }}>
+          ✏️ 이름 변경 승인 대기 목록 ({pendingNameUsers.length}건)
+        </h2>
+        {loading ? (
+          <div className="empty-state">로딩 중...</div>
+        ) : pendingNameUsers.length === 0 ? (
+          <div className="empty-state">현재 이름 변경 승인 대기 중인 사용자가 없습니다.</div>
+        ) : (
+          <div className="table-responsive">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>이메일 (ID)</th>
+                  <th>현재 이름</th>
+                  <th>변경 요청 이름</th>
+                  <th>소속 부서</th>
+                  <th>기본 권한</th>
+                  <th>승인 처리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingNameUsers.map(user => (
+                  <tr key={user.email}>
+                    <td>{user.email}</td>
+                    <td style={{ color: '#64748b' }}>{user.name}</td>
+                    <td style={{ fontWeight: 'bold', color: '#0284c7' }}>{user.requested_name}</td>
+                    <td>{departments[user.department_id] || '부서 미지정'}</td>
+                    <td>{getRoleLabel(user.role)}</td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          className="btn btn-primary" 
+                          onClick={() => handleApproveNameChange(user.email, user.requested_name)}
+                          disabled={actionLoading}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                        >
+                          승인
+                        </button>
+                        <button 
+                          className="btn btn-secondary" 
+                          onClick={() => handleRejectNameChange(user.email)}
+                          disabled={actionLoading}
+                          style={{ padding: '6px 12px', fontSize: '12px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}
+                        >
+                          반려
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -239,7 +341,32 @@ export default function UserManagement({ currentUser }) {
                 {filteredUsers.map(user => (
                   <tr key={user.email}>
                     <td>{user.email}</td>
-                    <td>{user.name}</td>
+                    <td>
+                      <div>{user.name}</div>
+                      {user.requested_name && user.requested_name !== user.name && (
+                        <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>➡️ 요청: {user.requested_name}</span>
+                          {(isSysAdmin || currentUserRole === 'manager' || (currentUserRole === 'team_manager' && user.department_id === currentUserDeptId)) && (
+                            <span style={{ marginLeft: '4px' }}>
+                              <button
+                                onClick={() => handleApproveNameChange(user.email, user.requested_name)}
+                                disabled={actionLoading}
+                                style={{ background: '#0284c7', color: '#fff', border: 'none', borderRadius: '3px', padding: '1px 5px', fontSize: '11px', cursor: 'pointer', marginRight: '3px' }}
+                              >
+                                승인
+                              </button>
+                              <button
+                                onClick={() => handleRejectNameChange(user.email)}
+                                disabled={actionLoading}
+                                style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '3px', padding: '1px 5px', fontSize: '11px', cursor: 'pointer' }}
+                              >
+                                반려
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td>{departments[user.department_id] || '부서 미지정'}</td>
                     <td>
                       <select 

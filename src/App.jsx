@@ -23,6 +23,11 @@ export default function App() {
   const [showDeptEditModal, setShowDeptEditModal] = useState(false);
   const [userDeptId, setUserDeptId] = useState('');
 
+  // 이름 변경 신청을 위한 상태 변수
+  const [showNameEditModal, setShowNameEditModal] = useState(false);
+  const [inputRequestedName, setInputRequestedName] = useState('');
+  const [nameActionLoading, setNameActionLoading] = useState(false);
+
   // 부서 목록 로드 및 현재 사용자 부서 ID 설정
   useEffect(() => {
     const fetchDepts = async () => {
@@ -171,6 +176,61 @@ export default function App() {
         console.error('사용자 소속 부서 ID 업데이트 실패:', err);
         alert('소속 부서 변경 중 오류가 발생했습니다.');
       }
+    }
+  };
+
+  // 이름 변경 신청 제출 처리
+  const handleNameChangeSubmit = async () => {
+    const trimmed = inputRequestedName.trim();
+    if (!trimmed) {
+      alert('변경할 이름을 입력해 주세요.');
+      return;
+    }
+    if (trimmed === roleName && !currentUser.user_metadata?.requested_name) {
+      alert('현재 이름과 동일합니다.');
+      return;
+    }
+
+    setNameActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ requested_name: trimmed })
+        .eq('email', currentUser.email);
+
+      if (error) throw error;
+
+      alert('이름 변경 신청이 완료되었습니다.\n관리자 승인 후 최종 이름이 변경 적용됩니다.');
+      setShowNameEditModal(false);
+      await handleSessionRefresh();
+    } catch (err) {
+      console.error('이름 변경 신청 실패:', err);
+      alert(`이름 변경 신청 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+      setNameActionLoading(false);
+    }
+  };
+
+  // 이름 변경 신청 취소 처리
+  const handleCancelNameChange = async () => {
+    if (!window.confirm('이름 변경 신청을 취소하시겠습니까?')) return;
+    setNameActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('users')
+        .update({ requested_name: null })
+        .eq('email', currentUser.email);
+
+      if (error) throw error;
+
+      alert('이름 변경 신청이 취소되었습니다.');
+      setShowNameEditModal(false);
+      await handleSessionRefresh();
+    } catch (err) {
+      console.error('이름 변경 신청 취소 실패:', err);
+      alert(`이름 변경 신청 취소 중 오류가 발생했습니다: ${err.message}`);
+    } finally {
+      setNameActionLoading(false);
     }
   };
 
@@ -342,6 +402,34 @@ export default function App() {
             <div className="user-info">
               <span className="user-name" style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
                 {roleName} ({departmentName})
+                {currentUser.user_metadata?.requested_name && currentUser.user_metadata.requested_name !== roleName && (
+                  <span 
+                    style={{ fontSize: '11px', color: '#d97706', backgroundColor: '#fffbe8', border: '1px solid #fde68a', padding: '1px 6px', borderRadius: '4px', fontWeight: '600' }} 
+                    title={`변경 요청된 이름: ${currentUser.user_metadata.requested_name}`}
+                  >
+                    이름 변경 대기
+                  </span>
+                )}
+                <button 
+                  onClick={() => { setInputRequestedName(currentUser.user_metadata?.requested_name || roleName); setShowNameEditModal(true); setIsMobileMenuOpen(false); }} 
+                  className="btn-edit-name"
+                  title="이름 변경 신청"
+                  style={{
+                    background: 'none',
+                    border: '1px solid #d1d5db',
+                    padding: '2px 6px',
+                    fontSize: '11px',
+                    borderRadius: '4px',
+                    color: '#004680',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    fontWeight: '500'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(0, 70, 128, 0.05)'; e.currentTarget.style.borderColor = '#004680'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                >
+                  이름 변경
+                </button>
                 <button 
                   onClick={() => { setShowDeptEditModal(true); setIsMobileMenuOpen(false); }} 
                   className="btn-edit-dept"
@@ -363,7 +451,6 @@ export default function App() {
                   소속 변경
                 </button>
               </span>
-
             </div>
             <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="btn-logout">
               로그아웃
@@ -438,6 +525,95 @@ export default function App() {
                 style={{ padding: '6px 16px', fontSize: '13px' }}
               >
                 닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이름 변경 신청 모달 */}
+      {showNameEditModal && (
+        <div 
+          className="modal-overlay" 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+          onClick={(e) => e.target.className === 'modal-overlay' && setShowNameEditModal(false)}
+        >
+          <div className="glass-card" style={{ width: '420px', padding: '24px', backgroundColor: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#004680', margin: 0 }}>이름 변경 신청</h3>
+              <button 
+                onClick={() => setShowNameEditModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#6b7280' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label className="form-label" style={{ marginBottom: '4px', display: 'block', fontWeight: '600', fontSize: '13px', color: '#4b5563' }}>
+                  현재 성명
+                </label>
+                <input 
+                  type="text" 
+                  value={roleName} 
+                  disabled 
+                  className="form-input"
+                  style={{ width: '100%', backgroundColor: '#f3f4f6', color: '#6b7280', cursor: 'not-allowed' }}
+                />
+              </div>
+
+              <div>
+                <label className="form-label" style={{ marginBottom: '4px', display: 'block', fontWeight: '600', fontSize: '13px', color: '#111827' }}>
+                  변경 요청할 성명 <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="새 이름을 입력하세요"
+                  value={inputRequestedName}
+                  onChange={(e) => setInputRequestedName(e.target.value)}
+                  className="form-input"
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              {currentUser.user_metadata?.requested_name && (
+                <div style={{ padding: '10px 12px', backgroundColor: '#fffbe8', border: '1px solid #fde68a', borderRadius: '6px', fontSize: '13px', color: '#b45309' }}>
+                  ⏳ 현재 변경 요청중인 이름: <strong>{currentUser.user_metadata.requested_name}</strong> (관리자 승인 대기중)
+                </div>
+              )}
+
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0, lineHeight: '1.4' }}>
+                💡 이름 변경은 직접 바로 변경할 수 없으며, 부서/원무 관리자 승인 후 시스템에 반영됩니다.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              {currentUser.user_metadata?.requested_name && (
+                <button 
+                  className="btn" 
+                  onClick={handleCancelNameChange}
+                  disabled={nameActionLoading}
+                  style={{ padding: '6px 16px', fontSize: '13px', backgroundColor: '#fee2e2', color: '#b91c1c', border: '1px solid #fca5a5' }}
+                >
+                  신청 취소
+                </button>
+              )}
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setShowNameEditModal(false)}
+                disabled={nameActionLoading}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
+              >
+                닫기
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={handleNameChangeSubmit}
+                disabled={nameActionLoading || !inputRequestedName.trim()}
+                style={{ padding: '6px 16px', fontSize: '13px' }}
+              >
+                {nameActionLoading ? '처리 중...' : '변경 신청'}
               </button>
             </div>
           </div>

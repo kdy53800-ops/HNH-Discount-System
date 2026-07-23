@@ -37,7 +37,7 @@ export default function ApplicantView({ currentUser }) {
   const [editDetails, setEditDetails] = useState('');
 
   const applicantEmail = currentUser?.email || '';
-  const applicantName = currentUser?.name || '홍신청';
+  const applicantName = currentUser?.user_metadata?.name || currentUser?.name || '홍신청';
 
   useEffect(() => {
     fetchMasterData();
