@@ -129,6 +129,9 @@ export default function SpecialDiscountView({ currentUser }) {
     try {
       const payload = {
         ...formData,
+        request_date: formData.request_date || null,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
         updated_at: new Date().toISOString()
       };
 
@@ -284,13 +287,13 @@ export default function SpecialDiscountView({ currentUser }) {
           if (!nameVal || nameVal === '이름' || nameVal === '성명') return;
 
           const parseDateStr = (val) => {
-            if (!val) return '';
+            if (!val) return null;
             const str = String(val).replace(/\./g, '-').replace(/\s+/g, '').replace(/-$/g, '');
             const parts = str.split('-');
             if (parts.length === 3) {
               return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
             }
-            return '';
+            return null;
           };
 
           const rawRate = getCellVal(idxDiscountRate);
