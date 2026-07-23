@@ -5,6 +5,7 @@ import DepartmentSelect from './DepartmentSelect';
 export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
   const [departments, setDepartments] = useState([]);
   const [selectedDept, setSelectedDept] = useState('');
+  const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,9 +20,17 @@ export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
       }
     };
     fetchDepts();
-  }, []);
+
+    const initialName = currentUser?.user_metadata?.name || currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || '';
+    setUserName(initialName);
+  }, [currentUser]);
 
   const handleSubmit = async () => {
+    const trimmedName = userName.trim();
+    if (!trimmedName) {
+      alert('이름을 입력해 주세요.');
+      return;
+    }
     if (!selectedDept) {
       alert('소속 부서를 선택해 주세요.');
       return;
@@ -33,7 +42,7 @@ export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
         .from('users')
         .upsert({
           email: currentUser.email,
-          name: currentUser.user_metadata?.full_name || currentUser.email.split('@')[0],
+          name: trimmedName,
           department_id: selectedDept,
           status: 'pending',
           role: 'applicant'
@@ -80,8 +89,22 @@ export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
         ) : (
           <>
             <p className="login-desc" style={{ marginBottom: '24px', textAlign: 'left' }}>
-              환영합니다! 시스템을 이용하려면 먼저 소속 부서를 선택하고 권한을 신청해 주세요.
+              환영합니다! 시스템을 이용하려면 먼저 성명과 소속 부서를 확인하고 권한을 신청해 주세요.
             </p>
+
+            <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+              <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                성명 (이름) <span style={{ color: 'red' }}>*</span>
+              </label>
+              <input 
+                type="text"
+                className="form-input"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="본인의 이름을 입력해 주세요"
+                style={{ width: '100%', padding: '10px 12px' }}
+              />
+            </div>
             
             <div style={{ marginBottom: '24px', textAlign: 'left' }}>
               <label className="form-label" style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
@@ -97,7 +120,7 @@ export default function AccessRequestScreen({ currentUser, onSessionRefresh }) {
             
             <button 
               onClick={handleSubmit} 
-              disabled={loading || !selectedDept} 
+              disabled={loading || !selectedDept || !userName.trim()} 
               className="btn btn-primary"
               style={{ width: '100%', padding: '12px', fontSize: '15px' }}
             >
