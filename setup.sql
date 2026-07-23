@@ -130,10 +130,24 @@ CREATE TABLE special_discounts (
     updated_at timestamp with time zone DEFAULT now()
 );
 
+-- 10. 특별 감면 변경 이력 테이블 (special_discount_logs)
+CREATE TABLE IF NOT EXISTS special_discount_logs (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    special_discount_id uuid REFERENCES special_discounts(id) ON DELETE CASCADE,
+    field_name text NOT NULL,        -- 변경 항목 (예: 'discount_rate', 'status', 'reason' 등)
+    before_value text,               -- 변경 전 값
+    after_value text,                -- 변경 후 값
+    edited_by_email text NOT NULL,   -- 수정자 이메일
+    edited_by_name text NOT NULL,    -- 수정자 이름
+    edited_at timestamp with time zone DEFAULT now()
+);
+
 -- 기존 스키마 패치용 마이그레이션 구문
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_outpatient text;
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_inpatient text;
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_checkup text;
+ALTER TABLE special_discounts DISABLE ROW LEVEL SECURITY;
+ALTER TABLE special_discount_logs DISABLE ROW LEVEL SECURITY;
 
 -- ==========================================
 -- 초기 시드 데이터 삽입

@@ -63,9 +63,34 @@ export default function SpecialDiscountView({ currentUser }) {
   const [parsedImportData, setParsedImportData] = useState([]);
   const [importFileName, setImportFileName] = useState('');
 
+  // 이력 로그 모달 상태
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState(null);
+  const [itemHistoryLogs, setItemHistoryLogs] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   useEffect(() => {
     fetchSpecialDiscounts();
   }, []);
+
+  const handleOpenHistoryModal = async (item) => {
+    setSelectedHistoryItem(item);
+    setHistoryModalOpen(true);
+    setHistoryLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('special_discount_logs')
+        .select('*')
+        .eq('special_discount_id', item.id)
+        .order('edited_at', { ascending: false });
+      if (error) throw error;
+      setItemHistoryLogs(data || []);
+    } catch (err) {
+      console.error('이력 로드 실패:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const fetchSpecialDiscounts = async () => {
     setLoading(true);
@@ -157,6 +182,50 @@ export default function SpecialDiscountView({ currentUser }) {
       };
 
       if (editingItem) {
+        // 변경 항목 자동 감지 및 로깅
+        const editorEmail = currentUser?.email || 'manager@hnh.local';
+        const editorName = currentUser?.user_metadata?.full_name || currentUser?.name || '원무팀 담당자';
+
+        const fieldsToTrack = [
+          { key: 'name', label: '성명/기관명' },
+          { key: 'chart_no', label: '차트번호/범위' },
+          { key: 'category', label: '적용 구분' },
+          { key: 'discount_rate', label: '대표 할인율' },
+          { key: 'discount_outpatient', label: '외래 할인율' },
+          { key: 'discount_inpatient', label: '입원 할인율' },
+          { key: 'discount_checkup', label: '검진 할인율' },
+          { key: 'reason', label: '사유/배경' },
+          { key: 'requester', label: '요청자' },
+          { key: 'request_date', label: '요청일자' },
+          { key: 'status', label: '적용 상태' },
+          { key: 'notes', label: '비공개 메모' }
+        ];
+
+        const logInserts = [];
+        fieldsToTrack.forEach(({ key, label }) => {
+          const beforeVal = String(editingItem[key] || '').trim();
+          const afterVal = String(payload[key] || '').trim();
+          if (beforeVal !== afterVal) {
+            logInserts.push({
+              special_discount_id: editingItem.id,
+              field_name: label,
+              before_value: beforeVal || '(미지정)',
+              after_value: afterVal || '(미지정)',
+              edited_by_email: editorEmail,
+              edited_by_name: editorName,
+              edited_at: new Date().toISOString()
+            });
+          }
+        });
+
+        if (logInserts.length > 0) {
+          try {
+            await supabase.from('special_discount_logs').insert(logInserts);
+          } catch (logErr) {
+            console.warn('이력 로그 저장 실패:', logErr);
+          }
+        }
+
         const { error } = await supabase
           .from('special_discounts')
           .update(payload)
@@ -164,10 +233,29 @@ export default function SpecialDiscountView({ currentUser }) {
         if (error) throw error;
         alert('특별 감면 대상 정보가 성공적으로 수정되었습니다.');
       } else {
-        const { error } = await supabase
+        const { data: newInserted, error } = await supabase
           .from('special_discounts')
-          .insert(payload);
+          .insert(payload)
+          .select();
         if (error) throw error;
+
+        if (newInserted && newInserted[0]) {
+          try {
+            const editorEmail = currentUser?.email || 'manager@hnh.local';
+            const editorName = currentUser?.user_metadata?.full_name || currentUser?.name || '원무팀 담당자';
+            await supabase.from('special_discount_logs').insert({
+              special_discount_id: newInserted[0].id,
+              field_name: '신규 등록',
+              before_value: null,
+              after_value: `'${newInserted[0].name}' 특별 감면 생성`,
+              edited_by_email: editorEmail,
+              edited_by_name: editorName,
+              edited_at: new Date().toISOString()
+            });
+          } catch (e) {
+            console.warn('신규 등록 로그 저장 실패:', e);
+          }
+        }
         alert('특별 감면 대상이 정상적으로 등록되었습니다.');
       }
 
@@ -662,6 +750,14 @@ export default function SpecialDiscountView({ currentUser }) {
                     <td>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                         <button 
+                          onClick={() => handleOpenHistoryModal(item)} 
+                          className="btn btn-secondary"
+                          style={{ padding: '3px 8px', fontSize: '12px', color: '#0369a1', borderColor: '#bae6fd', backgroundColor: '#f0f9ff' }}
+                          title="변경 이력 타임라인 보기"
+                        >
+                          📋 이력
+                        </button>
+                        <button 
                           onClick={() => handleOpenEditModal(item)} 
                           className="btn btn-secondary"
                           style={{ padding: '3px 8px', fontSize: '12px' }}
@@ -942,6 +1038,79 @@ export default function SpecialDiscountView({ currentUser }) {
                 className="btn btn-primary"
               >
                 DB에 일괄 등록 ({parsedImportData.length}건)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. 변경 이력 타임라인 모달 */}
+      {historyModalOpen && (
+        <div className="modal-overlay" onClick={() => setHistoryModalOpen(false)}>
+          <div className="modal-content" style={{ maxWidth: '640px', width: '92%' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">
+                📋 변경 이력 타임라인 ({selectedHistoryItem?.name || ''})
+              </h3>
+              <button className="modal-close-btn" onClick={() => setHistoryModalOpen(false)}>&times;</button>
+            </div>
+
+            <div className="modal-body" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+              {historyLoading ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                  이력을 불러오는 중입니다...
+                </div>
+              ) : itemHistoryLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8' }}>
+                  등록된 변경 이력이 없습니다.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {itemHistoryLogs.map((log) => (
+                    <div 
+                      key={log.id} 
+                      style={{ 
+                        backgroundColor: '#f8fafc', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '8px', 
+                        padding: '12px 14px' 
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '12px', color: '#64748b' }}>
+                        <span>
+                          👤 <strong>{log.edited_by_name}</strong> ({log.edited_by_email})
+                        </span>
+                        <span>
+                          🕒 {new Date(log.edited_at).toLocaleString('ko-KR')}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: 'bold', marginBottom: '4px' }}>
+                        🔹 [{log.field_name}] {log.field_name === '신규 등록' ? '생성' : '수정'}
+                      </div>
+                      {log.field_name !== '신규 등록' ? (
+                        <div style={{ fontSize: '12px', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <span style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '2px 6px', borderRadius: '4px' }}>
+                            기존: {log.before_value}
+                          </span>
+                          <span>➔</span>
+                          <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                            변경: {log.after_value}
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: '12px', color: '#166534', backgroundColor: '#dcfce7', padding: '4px 8px', borderRadius: '4px' }}>
+                          {log.after_value}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer">
+              <button type="button" onClick={() => setHistoryModalOpen(false)} className="btn btn-secondary">
+                닫기
               </button>
             </div>
           </div>
