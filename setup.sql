@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS special_discount_logs (
 );
 
 -- 기존 스키마 패치용 마이그레이션 구문
+ALTER TABLE discount_requests ADD COLUMN IF NOT EXISTS treatment_end_date date;
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_outpatient text;
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_inpatient text;
 ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_checkup text;

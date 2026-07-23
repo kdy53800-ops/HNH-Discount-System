@@ -448,7 +448,7 @@ export default function ManagerView({ currentUser }) {
       `'${req.patient_no}`, // 병록번호 앞자리 0이 엑셀에서 사라지는 현상 방지
       req.patient_name,
       req.relationship,
-      req.clinic_date || '',
+      (req.treatment_end_date && req.treatment_end_date !== req.clinic_date ? `${req.clinic_date} ~ ${req.treatment_end_date}` : req.clinic_date) || '',
       req.clinic_dept,
       req.discount_type,
       req.reason_category,
@@ -1447,8 +1447,12 @@ export default function ManagerView({ currentUser }) {
                       <div className="detail-value">{selectedReq.clinic_dept}</div>
                     </div>
                     <div className="detail-item">
-                      <div className="detail-label">진료일자</div>
-                      <div className="detail-value">{selectedReq.clinic_date || '미기입'}</div>
+                      <div className="detail-label">진료 기간</div>
+                      <div className="detail-value">
+                        {selectedReq.treatment_end_date && selectedReq.treatment_end_date !== selectedReq.clinic_date
+                          ? `${selectedReq.clinic_date} ~ ${selectedReq.treatment_end_date}`
+                          : (selectedReq.clinic_date || '미기입')}
+                      </div>
                     </div>
                     <div className="detail-item">
                       <div className="detail-label">감면 구분</div>

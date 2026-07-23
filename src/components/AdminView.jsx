@@ -38,6 +38,7 @@ export default function AdminView({ currentUser }) {
   const [editPatientName, setEditPatientName] = useState('');
   const [editClinicDept, setEditClinicDept] = useState('');
   const [editClinicDate, setEditClinicDate] = useState('');
+  const [editClinicEndDate, setEditClinicEndDate] = useState('');
   const [editDiscountAmount, setEditDiscountAmount] = useState(0);
   const [editAdminNotes, setEditAdminNotes] = useState('');
   const [editStatus, setEditStatus] = useState('');
@@ -213,6 +214,7 @@ export default function AdminView({ currentUser }) {
     setEditPatientName(req.patient_name);
     setEditClinicDept(req.clinic_dept);
     setEditClinicDate(req.clinic_date || '');
+    setEditClinicEndDate(req.treatment_end_date || req.clinic_date || '');
     setEditDiscountAmount(Number(req.discount_amount || 0));
     setEditAdminNotes(req.admin_notes || '');
     setEditStatus(req.status);
@@ -345,6 +347,7 @@ export default function AdminView({ currentUser }) {
         patient_name: editPatientName,
         clinic_dept: editClinicDept,
         clinic_date: editClinicDate,
+        treatment_end_date: editClinicEndDate || editClinicDate || null,
         discount_amount: editDiscountAmount,
         admin_notes: editAdminNotes,
         status: editStatus
@@ -735,15 +738,33 @@ export default function AdminView({ currentUser }) {
                         ))}
                       </select>
                     </div>
-                    <div className="form-group">
-                      <label className="form-label required">진료일자 수정</label>
-                      <input 
-                        type="date" 
-                        value={editClinicDate} 
-                        onChange={(e) => setEditClinicDate(e.target.value)} 
-                        disabled={isFinalApproved}
-                        className="form-input" 
-                      />
+                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                      <label className="form-label required">진료 기간 수정 (시작일 ~ 종료일)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <input 
+                          type="date" 
+                          value={editClinicDate} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditClinicDate(val);
+                            if (!editClinicEndDate || editClinicEndDate === editClinicDate || editClinicEndDate < val) {
+                              setEditClinicEndDate(val);
+                            }
+                          }} 
+                          disabled={isFinalApproved}
+                          className="form-input" 
+                          style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+                        />
+                        <span style={{ fontWeight: 'bold', color: '#64748b' }}>~</span>
+                        <input 
+                          type="date" 
+                          value={editClinicEndDate} 
+                          onChange={(e) => setEditClinicEndDate(e.target.value)} 
+                          disabled={isFinalApproved}
+                          className="form-input" 
+                          style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+                        />
+                      </div>
                     </div>
                     <div className="form-group">
                       <label className="form-label required">감면금액 입력 (원화)</label>

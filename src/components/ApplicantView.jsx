@@ -10,6 +10,7 @@ export default function ApplicantView({ currentUser }) {
   const [relationship, setRelationship] = useState('기타 (관계없음-감면등록용)');
   const [clinicDept, setClinicDept] = useState('');
   const [clinicDate, setClinicDate] = useState(new Date().toISOString().split('T')[0]);
+  const [clinicEndDate, setClinicEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [reasonCategory, setReasonCategory] = useState('감면규정등록');
   const [details, setDetails] = useState('');
   
@@ -33,6 +34,7 @@ export default function ApplicantView({ currentUser }) {
   const [editRelationship, setEditRelationship] = useState('');
   const [editClinicDept, setEditClinicDept] = useState('');
   const [editClinicDate, setEditClinicDate] = useState('');
+  const [editClinicEndDate, setEditClinicEndDate] = useState('');
   const [editReasonCategory, setEditReasonCategory] = useState('');
   const [editDetails, setEditDetails] = useState('');
 
@@ -197,6 +199,7 @@ export default function ApplicantView({ currentUser }) {
       setEditRelationship(data.relationship);
       setEditClinicDept(data.clinic_dept);
       setEditClinicDate(data.clinic_date);
+      setEditClinicEndDate(data.treatment_end_date || data.clinic_date || '');
       setEditReasonCategory(data.reason_category);
       setEditDetails(data.details || '');
     } catch (err) {
@@ -224,6 +227,7 @@ export default function ApplicantView({ currentUser }) {
           relationship: editRelationship,
           clinic_dept: editClinicDept,
           clinic_date: editClinicDate,
+          treatment_end_date: editClinicEndDate || editClinicDate || null,
           reason_category: editReasonCategory,
           details: editDetails,
           status: '신청완료'
@@ -247,7 +251,7 @@ export default function ApplicantView({ currentUser }) {
   // 신청서 제출 처리
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!patientNo || !patientName || !relationship || !clinicDept || !reasonCategory || !clinicDate) {
+    if ((!patientNo && !patientNoUnassigned) || !patientName || !relationship || !clinicDept || !reasonCategory || !clinicDate) {
       alert('필수 기입 사항을 입력해 주세요.');
       return;
     }
@@ -265,8 +269,6 @@ export default function ApplicantView({ currentUser }) {
         ip = '192.168.' + Math.floor(Math.random() * 254 + 1) + '.' + Math.floor(Math.random() * 254 + 1);
       }
 
-
-
       const paddedPatientNo = patientNoUnassigned ? '미생성' : patientNo.padStart(10, '0');
 
       const newRequest = {
@@ -276,6 +278,7 @@ export default function ApplicantView({ currentUser }) {
         relationship: relationship,
         clinic_dept: clinicDept,
         clinic_date: clinicDate,
+        treatment_end_date: clinicEndDate || clinicDate || null,
         reason_category: reasonCategory,
         details: details,
         applicant_dept: userDeptName,
@@ -434,14 +437,32 @@ export default function ApplicantView({ currentUser }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label required">진료일자</label>
-            <input 
-              type="date" 
-              value={clinicDate} 
-              onChange={(e) => setClinicDate(e.target.value)} 
-              className="form-input"
-              required
-            />
+            <label className="form-label required">진료 기간 (시작일 ~ 종료일)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <input 
+                type="date" 
+                value={clinicDate} 
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setClinicDate(val);
+                  if (!clinicEndDate || clinicEndDate === clinicDate || clinicEndDate < val) {
+                    setClinicEndDate(val);
+                  }
+                }} 
+                className="form-input"
+                required
+                style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+              />
+              <span style={{ fontWeight: 'bold', color: '#64748b' }}>~</span>
+              <input 
+                type="date" 
+                value={clinicEndDate} 
+                onChange={(e) => setClinicEndDate(e.target.value)} 
+                className="form-input"
+                required
+                style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -654,15 +675,33 @@ export default function ApplicantView({ currentUser }) {
                   </select>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label required">진료일자</label>
-                  <input
-                    type="date"
-                    value={editClinicDate}
-                    onChange={(e) => setEditClinicDate(e.target.value)}
-                    className="form-input"
-                    required
-                  />
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label required">진료 기간 (시작일 ~ 종료일)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="date"
+                      value={editClinicDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditClinicDate(val);
+                        if (!editClinicEndDate || editClinicEndDate === editClinicDate || editClinicEndDate < val) {
+                          setEditClinicEndDate(val);
+                        }
+                      }}
+                      className="form-input"
+                      required
+                      style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+                    />
+                    <span style={{ fontWeight: 'bold', color: '#64748b' }}>~</span>
+                    <input
+                      type="date"
+                      value={editClinicEndDate}
+                      onChange={(e) => setEditClinicEndDate(e.target.value)}
+                      className="form-input"
+                      required
+                      style={{ flex: 1, minWidth: 0, fontSize: '13px' }}
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -734,7 +773,13 @@ export default function ApplicantView({ currentUser }) {
                   <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>대상자 병록번호:</strong> {selectedRequest.patient_no}</div>
                   <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>대상자 이름:</strong> {selectedRequest.patient_name}</div>
                   <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>관계:</strong> {selectedRequest.relationship}</div>
-                  <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>진료일자:</strong> {selectedRequest.clinic_date}</div>
+                  <div style={{ fontSize: '13px', color: '#4b5563' }}>
+                    <strong>진료 기간:</strong> {
+                      selectedRequest.treatment_end_date && selectedRequest.treatment_end_date !== selectedRequest.clinic_date 
+                        ? `${selectedRequest.clinic_date} ~ ${selectedRequest.treatment_end_date}` 
+                        : selectedRequest.clinic_date
+                    }
+                  </div>
                   <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>진료과:</strong> {selectedRequest.clinic_dept}</div>
                   <div style={{ fontSize: '13px', color: '#4b5563' }}><strong>감면사유:</strong> {selectedRequest.reason_category}</div>
                   
