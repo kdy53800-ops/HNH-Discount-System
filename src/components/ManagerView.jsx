@@ -108,6 +108,37 @@ export default function ManagerView({ currentUser }) {
     }
   };
 
+  // 꺾은선 차트 연월(YYYY-MM) 클릭 시 해당 월 시작일~종료일 필터링
+  const handleMonthFilterToggle = (monthStr) => {
+    if (!monthStr || typeof monthStr !== 'string') return;
+    const parts = monthStr.split('-');
+    if (parts.length !== 2) return;
+
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    if (isNaN(year) || isNaN(month)) return;
+
+    const startDateStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDateStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    if (filterStartDate === startDateStr && filterEndDate === endDateStr) {
+      setFilterStartDate('');
+      setFilterEndDate('');
+    } else {
+      setFilterStartDate(startDateStr);
+      setFilterEndDate(endDateStr);
+    }
+  };
+
+  const getActiveMonthString = () => {
+    if (!filterStartDate || !filterEndDate) return '';
+    const startPart = filterStartDate.slice(0, 7);
+    const endPart = filterEndDate.slice(0, 7);
+    if (startPart === endPart) return startPart;
+    return `${filterStartDate} ~ ${filterEndDate}`;
+  };
+
   const fetchMasterData = async () => {
     try {
       const { data } = await supabase.from('clinic_departments').select('name').order('name');
@@ -1068,15 +1099,44 @@ export default function ManagerView({ currentUser }) {
         
         {/* 월별 감면 신청 추이 (꺾은선) */}
         <div className="glass-card" style={{ gridColumn: 'span 3' }}>
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '20px' }}>기간별(월별) 최종승인 감면 추이</h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', margin: 0 }}>
+              기간별(월별) 최종승인 감면 추이
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'normal', marginLeft: '8px' }}>
+                (그래프 포인트 또는 X축 연월 클릭 시 해당 월로 필터링)
+              </span>
+            </h3>
+            {getActiveMonthString() && (
+              <span 
+                onClick={() => { setFilterStartDate(''); setFilterEndDate(''); }}
+                style={{ fontSize: '11px', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#fef2f2', padding: '3px 8px', borderRadius: '4px', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}
+                title="클릭하여 기간 필터 해제"
+              >
+                ✕ {getActiveMonthString()} 필터 해제
+              </span>
+            )}
+          </div>
+
           {stats.monthlyStats.length === 0 ? (
             <div className="empty-state" style={{ padding: '40px 0' }}>데이터가 존재하지 않습니다.</div>
           ) : (
             <div style={{ width: '100%', height: 220 }}>
               <ResponsiveContainer>
-                <LineChart data={stats.monthlyStats} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
+                <LineChart 
+                  data={stats.monthlyStats} 
+                  margin={{ top: 15, right: 20, bottom: 5, left: 20 }}
+                  onClick={(e) => {
+                    if (e && e.activeLabel) {
+                      handleMonthFilterToggle(e.activeLabel);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 12, fill: '#004680', fontWeight: 'bold' }} 
+                  />
                   <YAxis yAxisId="left" tickFormatter={(v) => (v / 10000) + '만'} tick={{ fontSize: 12 }} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
                   <Tooltip 
@@ -1088,10 +1148,26 @@ export default function ManagerView({ currentUser }) {
                     labelStyle={{ fontWeight: 'bold' }}
                   />
                   <Legend verticalAlign="top" height={36}/>
-                  <Line yAxisId="left" type="monotone" dataKey="amount" name="감면 금액" stroke="#004680" strokeWidth={3} activeDot={{ r: 8 }}>
+                  <Line 
+                    yAxisId="left" 
+                    type="monotone" 
+                    dataKey="amount" 
+                    name="감면 금액" 
+                    stroke="#004680" 
+                    strokeWidth={3} 
+                    activeDot={{ r: 8, cursor: 'pointer' }}
+                  >
                     <LabelList dataKey="amount" position="top" formatter={(val) => Math.round(val / 10000) + '만'} fontSize={11} fill="#004680" fontWeight="bold" />
                   </Line>
-                  <Line yAxisId="right" type="monotone" dataKey="count" name="신청 건수" stroke="#39a845" strokeWidth={3}>
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey="count" 
+                    name="신청 건수" 
+                    stroke="#39a845" 
+                    strokeWidth={3}
+                    activeDot={{ r: 8, cursor: 'pointer' }}
+                  >
                     <LabelList dataKey="count" position="bottom" formatter={(val) => val + '건'} fontSize={11} fill="#39a845" fontWeight="bold" />
                   </Line>
                 </LineChart>
