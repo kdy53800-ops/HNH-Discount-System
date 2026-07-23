@@ -70,8 +70,43 @@ export default function ManagerView({ currentUser }) {
 
   useEffect(() => {
     fetchMasterData();
-    fetchAllData();
   }, []);
+
+  // 필터 상태 변경 시 대시보드 및 목록 즉시 갱신
+  useEffect(() => {
+    fetchAllData();
+  }, [
+    filterStartDate, filterEndDate, filterStatus, filterType, 
+    filterPatientNo, filterPatientName, filterRelationship, 
+    filterClinicDept, filterClinicDate, filterReason, 
+    filterApplicantDept, filterApplicant
+  ]);
+
+  // 대시보드 차트/항목 클릭 시 필터 토글
+  const handleFilterToggle = (category, value) => {
+    switch (category) {
+      case 'status':
+        setFilterStatus(prev => prev === value ? '' : value);
+        break;
+      case 'type':
+        setFilterType(prev => prev === value ? '' : value);
+        break;
+      case 'reason':
+        setFilterReason(prev => prev === value ? '' : value);
+        break;
+      case 'relationship':
+        setFilterRelationship(prev => prev === value ? '' : value);
+        break;
+      case 'applicantDept':
+        setFilterApplicantDept(prev => prev === value ? '' : value);
+        break;
+      case 'clinicDept':
+        setFilterClinicDept(prev => prev === value ? '' : value);
+        break;
+      default:
+        break;
+    }
+  };
 
   const fetchMasterData = async () => {
     try {
@@ -714,7 +749,7 @@ export default function ManagerView({ currentUser }) {
     );
   };
 
-  const renderPieChartCard = (title, data, colorPaletteOffset = 0, isCountOnly = false) => {
+  const renderPieChartCard = (title, data, colorPaletteOffset = 0, isCountOnly = false, filterCategory = '', activeValue = '') => {
     if (!data || data.length === 0) {
       return (
         <div className="glass-card" style={{ height: '235px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -728,13 +763,24 @@ export default function ManagerView({ currentUser }) {
 
     return (
       <div className="glass-card" style={{ height: '235px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={title}>
-          {title}
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={title}>
+            {title}
+          </h3>
+          {activeValue && (
+            <span 
+              onClick={() => handleFilterToggle(filterCategory, activeValue)}
+              style={{ fontSize: '11px', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold', backgroundColor: '#fef2f2', padding: '2px 6px', borderRadius: '4px', border: '1px solid #fecaca', whiteSpace: 'nowrap' }}
+              title="클릭하여 필터 해제"
+            >
+              ✕ {activeValue}
+            </span>
+          )}
+        </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           
-          {/* 그래프 (박스 안쪽 좌측 고정 위치) */}
+          {/* 그래프 (슬라이스 클릭 시 필터 적용) */}
           <div style={{ width: '130px', height: '150px', flexShrink: 0 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -745,25 +791,37 @@ export default function ManagerView({ currentUser }) {
                   dataKey="value"
                   labelLine={false}
                   label={renderCustomizedLabel}
+                  onClick={(entry) => entry && entry.name && handleFilterToggle(filterCategory, entry.name)}
                 >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[(index + colorPaletteOffset) % COLORS.length]} />
-                  ))}
+                  {data.map((entry, index) => {
+                    const isSelected = activeValue === entry.name;
+                    return (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[(index + colorPaletteOffset) % COLORS.length]} 
+                        stroke={isSelected ? '#0284c7' : 'none'}
+                        strokeWidth={isSelected ? 3 : 0}
+                        style={{ cursor: 'pointer', filter: isSelected ? 'drop-shadow(0 0 4px rgba(0,0,0,0.4))' : 'none' }}
+                      />
+                    );
+                  })}
                 </Pie>
                 <Tooltip formatter={isCountOnly ? countTooltipFormatter : customTooltipFormatter} />
               </PieChart>
             </ResponsiveContainer>
           </div>
 
-          {/* 우측 세부 수치 리스트 (여유 있는 높이 & 부드러운 스크롤) */}
+          {/* 우측 세부 수치 리스트 (클릭 시 필터 적용) */}
           <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', paddingTop: '2px', paddingBottom: '2px' }}>
             {data.map((entry, index) => {
               const color = COLORS[(index + colorPaletteOffset) % COLORS.length];
               const pct = totalValue > 0 ? ((Number(entry.value) / totalValue) * 100).toFixed(1) : '0';
+              const isSelected = activeValue === entry.name;
               
               return (
                 <div 
                   key={entry.name} 
+                  onClick={() => handleFilterToggle(filterCategory, entry.name)}
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -771,21 +829,26 @@ export default function ManagerView({ currentUser }) {
                     fontSize: '11px', 
                     padding: '5px 7px', 
                     borderRadius: '5px', 
-                    backgroundColor: '#f8fafc',
-                    border: '1px solid #f1f5f9',
+                    backgroundColor: isSelected ? '#dbeafe' : '#f8fafc',
+                    border: isSelected ? '1px solid #0284c7' : '1px solid #f1f5f9',
                     gap: '4px',
-                    flexShrink: 0
+                    flexShrink: 0,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = '#e0f2fe'; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = '#f8fafc'; }}
+                  title={`클릭하여 '${entry.name}' (으)로 필터링`}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, overflow: 'hidden', flex: 1 }}>
                     <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                    <span style={{ color: '#334155', fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }} title={entry.name}>
-                      {entry.name}
+                    <span style={{ color: isSelected ? '#0369a1' : '#334155', fontWeight: isSelected ? 700 : 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                      {isSelected ? `✓ ${entry.name}` : entry.name}
                     </span>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                    <span style={{ fontWeight: 'bold', color: '#004680', fontSize: '11px' }}>
+                    <span style={{ fontWeight: 'bold', color: isSelected ? '#0369a1' : '#004680', fontSize: '11px' }}>
                       {isCountOnly ? `${entry.count || entry.value}건` : `${entry.count}건`}
                     </span>
                     {!isCountOnly && entry.amount != null && entry.amount > 0 && (
@@ -793,7 +856,7 @@ export default function ManagerView({ currentUser }) {
                         {Number(entry.amount).toLocaleString()}원
                       </span>
                     )}
-                    <span style={{ fontSize: '10px', color: '#64748b', backgroundColor: '#e2e8f0', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '10px', color: isSelected ? '#0369a1' : '#64748b', backgroundColor: isSelected ? '#bae6fd' : '#e2e8f0', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>
                       {pct}%
                     </span>
                   </div>
@@ -1038,22 +1101,22 @@ export default function ManagerView({ currentUser }) {
         </div>
 
         {/* 결재 처리상태별 통계 (건수 기준) */}
-        {renderPieChartCard("결재 처리상태별 분포 (건수 기준)", statusPieData, 0, true)}
+        {renderPieChartCard("결재 처리상태별 분포 (건수 기준)", statusPieData, 0, true, 'status', filterStatus)}
 
         {/* 감면구분별 통계 */}
-        {renderPieChartCard("감면구분별 지분 (최종승인 금액 기준)", typePieData, 2, false)}
+        {renderPieChartCard("감면구분별 지분 (최종승인 금액 기준)", typePieData, 2, false, 'type', filterType)}
 
         {/* 감면사유별 통계 */}
-        {renderPieChartCard("감면사유별 지분 (최종승인 금액 기준)", reasonPieData, 4, false)}
+        {renderPieChartCard("감면사유별 지분 (최종승인 금액 기준)", reasonPieData, 4, false, 'reason', filterReason)}
 
         {/* 신청자와의 관계별 통계 */}
-        {renderPieChartCard("대상자 관계별 지분 (최종승인 금액 기준)", relationPieData, 1, false)}
+        {renderPieChartCard("대상자 관계별 지분 (최종승인 금액 기준)", relationPieData, 1, false, 'relationship', filterRelationship)}
 
         {/* 신청 부서별 통계 (상위 8개) */}
-        {renderPieChartCard("신청 부서별 지분 (최종승인 금액 기준, 상위 8)", deptPieData, 0, false)}
+        {renderPieChartCard("신청 부서별 지분 (최종승인 금액 기준, 상위 8)", deptPieData, 0, false, 'applicantDept', filterApplicantDept)}
 
         {/* 진료과별 통계 (상위 8개) */}
-        {renderPieChartCard("진료과별 지분 (최종승인 금액 기준, 상위 8)", clinicDeptPieData, 3, false)}
+        {renderPieChartCard("진료과별 지분 (최종승인 금액 기준, 상위 8)", clinicDeptPieData, 3, false, 'clinicDept', filterClinicDept)}
 
       </div>
 
