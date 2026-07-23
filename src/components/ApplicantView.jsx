@@ -43,14 +43,18 @@ export default function ApplicantView({ currentUser }) {
   const applicantName = currentUser?.user_metadata?.name || currentUser?.name || '홍신청';
 
   useEffect(() => {
-    fetchMasterData();
-    fetchMyRequests();
-    fetchUserDeptName();
+    const initData = async () => {
+      fetchMasterData();
+      const resolvedDept = await fetchUserDeptName();
+      fetchMyRequests(resolvedDept);
+    };
+    initData();
   }, [currentUser]);
 
   // 신청자 소속 부서명 조회 (department_id 기반)
   const fetchUserDeptName = async () => {
     const deptId = currentUser?.user_metadata?.department_id || currentUser?.department_id;
+    let resolvedName = '미지정';
     if (deptId) {
       try {
         const { data } = await supabase
@@ -60,14 +64,16 @@ export default function ApplicantView({ currentUser }) {
           .maybeSingle();
         
         if (data?.name) {
-          setUserDeptName(data.name);
-          return;
+          resolvedName = data.name;
         }
       } catch (err) {
         console.error('부서명 조회 오류:', err);
       }
+    } else if (currentUser?.user_metadata?.department) {
+      resolvedName = currentUser.user_metadata.department;
     }
-    setUserDeptName(currentUser?.user_metadata?.department || '미지정');
+    setUserDeptName(resolvedName);
+    return resolvedName;
   };
 
   // 부서 및 사유 코드 정보 가져오기
@@ -106,15 +112,20 @@ export default function ApplicantView({ currentUser }) {
     }
   };
 
-  // 본인 신청 내역 조회 (이메일 기준)
-  const fetchMyRequests = async () => {
+  // 본인 및 소속 부서 신청 내역 조회
+  const fetchMyRequests = async (overrideDept) => {
     setLoading(true);
+    const targetDept = overrideDept || userDeptName;
     try {
-      const { data, error } = await supabase
-        .from('discount_requests')
-        .select('id, created_at, discount_type, patient_name, status')
-        .eq('applicant_email', applicantEmail)
-        .order('created_at', { ascending: false });
+      let query = supabase.from('discount_requests').select('*');
+
+      if (applicantEmail && targetDept && targetDept !== '미지정') {
+        query = query.or(`applicant_email.eq.${applicantEmail},applicant_dept.eq.${targetDept}`);
+      } else if (applicantEmail) {
+        query = query.eq('applicant_email', applicantEmail);
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       setRequestList(data || []);
@@ -486,7 +497,14 @@ export default function ApplicantView({ currentUser }) {
 
       {/* 신청 상태 요약 목록 */}
       <div className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
-        <h2 className="log-section-title" style={{ fontSize: '18px', marginBottom: '20px' }}>나의 감면 등록 현황</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 className="log-section-title" style={{ fontSize: '18px', margin: 0 }}>
+            소속 부서({userDeptName}) 감면 등록 현황
+          </h2>
+          <span style={{ fontSize: '12px', color: '#64748b' }}>
+            총 {requestList.length}건
+          </span>
+        </div>
         
         {loading ? (
           <div className="empty-state">내역을 조회하는 중입니다...</div>
@@ -501,6 +519,7 @@ export default function ApplicantView({ currentUser }) {
               <thead>
                 <tr>
                   <th style={{ padding: '8px' }}>신청일</th>
+                  <th style={{ padding: '8px' }}>신청자</th>
                   <th className="hide-on-mobile" style={{ padding: '8px' }}>진료과</th>
                   <th className="hide-on-mobile" style={{ padding: '8px' }}>관계</th>
                   <th style={{ padding: '8px' }}>대상자</th>
@@ -518,6 +537,10 @@ export default function ApplicantView({ currentUser }) {
                     onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
                   >
                     <td style={{ padding: '8px' }}>{formatDate(req.created_at)}</td>
+                    <td style={{ padding: '8px', fontWeight: req.applicant_email === applicantEmail ? 'bold' : 'normal' }}>
+                      {req.applicant_name}
+                      {req.applicant_email === applicantEmail && <span style={{ fontSize: '10px', color: '#0284c7', marginLeft: '3px' }}>(나)</span>}
+                    </td>
                     <td className="hide-on-mobile" style={{ padding: '8px' }}>{req.clinic_dept}</td>
                     <td className="hide-on-mobile" style={{ padding: '8px' }}>{req.relationship}</td>
                     <td style={{ padding: '8px' }}>{maskName(req.patient_name)}</td>
