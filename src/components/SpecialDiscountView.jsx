@@ -58,9 +58,14 @@ export default function SpecialDiscountView({ currentUser }) {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw error;
+      }
+      console.log('Fetched special discounts count:', data ? data.length : 0);
       setDataList(data || []);
     } catch (err) {
+      console.error('특별 감면 대상 로드 실패:', err);
       alert(`특별 감면 대상 조회 실패: ${err.message}`);
     } finally {
       setLoading(false);
