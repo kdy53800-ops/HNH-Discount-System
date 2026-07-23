@@ -517,6 +517,96 @@ export default function ManagerView({ currentUser }) {
     );
   };
 
+  const renderPieChartCard = (title, data, colorPaletteOffset = 0, isCountOnly = false) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="glass-card">
+          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>{title}</h3>
+          <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
+        </div>
+      );
+    }
+
+    const totalValue = data.reduce((acc, item) => acc + (Number(item.value) || 0), 0);
+
+    return (
+      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column' }}>
+        <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '12px' }}>{title}</h3>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, flexWrap: 'wrap' }}>
+          
+          {/* 그래프 (박스 안쪽 왼쪽 위치) */}
+          <div style={{ width: '150px', height: '160px', flexShrink: 0, margin: '0 auto' }}>
+            <ResponsiveContainer>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%" cy="50%"
+                  innerRadius={28} outerRadius={60}
+                  dataKey="value"
+                  labelLine={false}
+                  label={renderCustomizedLabel}
+                >
+                  {data.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[(index + colorPaletteOffset) % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={isCountOnly ? countTooltipFormatter : customTooltipFormatter} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* 오른쪽에 각 몇 건인지 등의 숫자가 표시되는 세부 리스트 */}
+          <div style={{ flex: 1, minWidth: '160px', maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+            {data.map((entry, index) => {
+              const color = COLORS[(index + colorPaletteOffset) % COLORS.length];
+              const pct = totalValue > 0 ? ((Number(entry.value) / totalValue) * 100).toFixed(1) : '0';
+              
+              return (
+                <div 
+                  key={entry.name} 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    fontSize: '12px', 
+                    padding: '5px 8px', 
+                    borderRadius: '6px', 
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #f1f5f9',
+                    gap: '6px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, overflow: 'hidden' }}>
+                    <span style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                    <span style={{ color: '#334155', fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }} title={entry.name}>
+                      {entry.name}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                    <span style={{ fontWeight: 'bold', color: '#004680', fontSize: '11px' }}>
+                      {isCountOnly ? `${entry.count || entry.value}건` : `${entry.count}건`}
+                    </span>
+                    {!isCountOnly && entry.amount != null && entry.amount > 0 && (
+                      <span style={{ fontSize: '11px', color: '#059669', fontWeight: 'bold' }}>
+                        {Number(entry.amount).toLocaleString()}원
+                      </span>
+                    )}
+                    <span style={{ fontSize: '10px', color: '#64748b', backgroundColor: '#e2e8f0', padding: '1px 4px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      {pct}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div>
       {/* 0. 상세 검색/필터 영역을 최상단으로 이동 */}
@@ -748,178 +838,22 @@ export default function ManagerView({ currentUser }) {
         </div>
 
         {/* 결재 처리상태별 통계 (건수 기준) */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>결재 처리상태별 분포 (건수 기준)</h3>
-          {statusPieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={statusPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {statusPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={countTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("결재 처리상태별 분포 (건수 기준)", statusPieData, 0, true)}
 
         {/* 감면구분별 통계 */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면구분별 지분 (최종승인 금액 기준)</h3>
-          {typePieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={typePieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {typePieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={customTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("감면구분별 지분 (최종승인 금액 기준)", typePieData, 2, false)}
 
         {/* 감면사유별 통계 */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>감면사유별 지분 (최종승인 금액 기준)</h3>
-          {reasonPieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={reasonPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {reasonPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[(index + 4) % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={customTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("감면사유별 지분 (최종승인 금액 기준)", reasonPieData, 4, false)}
 
         {/* 신청자와의 관계별 통계 */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>대상자 관계별 지분 (최종승인 금액 기준)</h3>
-          {relationPieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={relationPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {relationPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[(index + 1) % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={customTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '12px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("대상자 관계별 지분 (최종승인 금액 기준)", relationPieData, 1, false)}
 
         {/* 신청 부서별 통계 (상위 8개) */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>신청 부서별 지분 (최종승인 금액 기준, 상위 8)</h3>
-          {deptPieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={deptPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {deptPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={customTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("신청 부서별 지분 (최종승인 금액 기준, 상위 8)", deptPieData, 0, false)}
 
         {/* 진료과별 통계 (상위 8개) */}
-        <div className="glass-card">
-          <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>진료과별 지분 (최종승인 금액 기준, 상위 8)</h3>
-          {clinicDeptPieData.length === 0 ? (
-             <div className="empty-state" style={{ padding: '24px 0' }}>데이터가 존재하지 않습니다.</div>
-          ) : (
-            <div style={{ width: '100%', height: 180 }}>
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={clinicDeptPieData}
-                    cx="50%" cy="50%"
-                    innerRadius={30} outerRadius={70}
-                    dataKey="value"
-                    labelLine={false}
-                    label={renderCustomizedLabel}
-                  >
-                    {clinicDeptPieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={customTooltipFormatter} />
-                  <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ fontSize: '11px' }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
+        {renderPieChartCard("진료과별 지분 (최종승인 금액 기준, 상위 8)", clinicDeptPieData, 3, false)}
 
       </div>
 
