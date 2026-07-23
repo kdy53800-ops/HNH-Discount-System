@@ -1376,6 +1376,20 @@ export default function ManagerView({ currentUser }) {
                 <>
                   {/* 특별 감면 대상 자동 매칭 알림 뱃지 */}
                   {specialMatchInfo && (() => {
+                    const formatRateVal = (rateVal) => {
+                      if (!rateVal) return '';
+                      let str = String(rateVal).trim();
+                      const numMatch = str.match(/([0-9]+(\.[0-9]+)?)/);
+                      if (numMatch) {
+                        const num = parseFloat(numMatch[1]);
+                        if (!isNaN(num)) {
+                          const intNum = num <= 1 && num > 0 ? Math.round(num * 100) : Math.round(num);
+                          return `${intNum}%`;
+                        }
+                      }
+                      return str.endsWith('%') ? str : `${str}%`;
+                    };
+
                     const reqType = selectedReq?.discount_type || '';
                     let matchedRate = specialMatchInfo.discount_rate;
                     let typeLabel = '';
@@ -1398,7 +1412,7 @@ export default function ManagerView({ currentUser }) {
                             [특별 감면 대상 매칭] {specialMatchInfo.target_type}: {specialMatchInfo.name}
                           </div>
                           <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>
-                            현재 신청인({reqType}) 적용 할인율: <strong style={{ color: '#059669', fontSize: '13.5px' }}>{matchedRate}</strong> {typeLabel} | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
+                            현재 신청인({reqType}) 적용 할인율: <strong style={{ color: '#059669', fontSize: '13.5px' }}>{formatRateVal(matchedRate)}</strong> {typeLabel} | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
                           </div>
                         </div>
                       </div>

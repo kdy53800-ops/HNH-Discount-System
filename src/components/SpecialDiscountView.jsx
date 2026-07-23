@@ -2,6 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import * as XLSX from 'xlsx';
 
+export const formatRate = (rateVal) => {
+  if (rateVal === null || rateVal === undefined) return '';
+  let str = String(rateVal).trim();
+  if (!str) return '';
+
+  const numMatch = str.match(/([0-9]+(\.[0-9]+)?)/);
+  if (numMatch) {
+    const num = parseFloat(numMatch[1]);
+    if (!isNaN(num)) {
+      const intNum = num <= 1 && num > 0 ? Math.round(num * 100) : Math.round(num);
+      return `${intNum}%`;
+    }
+  }
+
+  return str.endsWith('%') ? str : `${str}%`;
+};
+
 export default function SpecialDiscountView({ currentUser }) {
   const [dataList, setDataList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -129,6 +146,10 @@ export default function SpecialDiscountView({ currentUser }) {
     try {
       const payload = {
         ...formData,
+        discount_rate: formatRate(formData.discount_rate),
+        discount_outpatient: formData.discount_outpatient ? formatRate(formData.discount_outpatient) : null,
+        discount_inpatient: formData.discount_inpatient ? formatRate(formData.discount_inpatient) : null,
+        discount_checkup: formData.discount_checkup ? formatRate(formData.discount_checkup) : null,
         request_date: formData.request_date || null,
         start_date: formData.start_date || null,
         end_date: formData.end_date || null,
@@ -600,23 +621,23 @@ export default function SpecialDiscountView({ currentUser }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px' }}>
                           {item.discount_outpatient && (
                             <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                              외래: <strong>{item.discount_outpatient}</strong>
+                              외래: <strong>{formatRate(item.discount_outpatient)}</strong>
                             </span>
                           )}
                           {item.discount_inpatient && (
                             <span style={{ backgroundColor: '#fef3c7', color: '#b45309', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                              입원: <strong>{item.discount_inpatient}</strong>
+                              입원: <strong>{formatRate(item.discount_inpatient)}</strong>
                             </span>
                           )}
                           {item.discount_checkup && (
                             <span style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                              검진: <strong>{item.discount_checkup}</strong>
+                              검진: <strong>{formatRate(item.discount_checkup)}</strong>
                             </span>
                           )}
                         </div>
                       ) : (
                         <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669' }}>
-                          {item.discount_rate}
+                          {formatRate(item.discount_rate)}
                         </span>
                       )}
                     </td>
