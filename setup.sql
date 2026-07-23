@@ -107,6 +107,26 @@ CREATE TABLE access_logs (
     accessed_at timestamp with time zone DEFAULT now()
 );
 
+-- 9. 특별 감면 대상자 및 할인 협약 기관 테이블 (special_discounts)
+CREATE TABLE special_discounts (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    target_type text NOT NULL DEFAULT '개인' CHECK (target_type IN ('개인', '기관/단체')),
+    name text NOT NULL,                -- 이름 또는 기관/단체명
+    chart_no text,                     -- 차트번호(병록번호) 또는 적용 대상 범위
+    category text NOT NULL DEFAULT '전체', -- 구분 (전체, 외래, 입원, 검진 등)
+    discount_rate text NOT NULL,       -- 할인율 (예: 100%, 50%, 20% 등)
+    reason text,                       -- 사유 (예: 신라대학교 이사장님, 협약기관)
+    requester text,                    -- 요청자 (예: 백선미 병원장님)
+    request_date date,                 -- 요청일자 / 등록일자
+    start_date date,                   -- 유효 시작일
+    end_date date,                     -- 유효 종료일
+    status text NOT NULL DEFAULT '활성' CHECK (status IN ('활성', '만료', '중단')),
+    contact text,                      -- 담당자 / 연락처
+    notes text,                        -- 원무팀 전용 유의사항 및 비고
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now()
+);
+
 -- ==========================================
 -- 초기 시드 데이터 삽입
 -- ==========================================

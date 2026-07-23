@@ -10,6 +10,7 @@ import DepartmentSelect from './components/DepartmentSelect';
 import FilterSettings from './components/FilterSettings';
 import UserManagement from './components/UserManagement';
 import AccessRequestScreen from './components/AccessRequestScreen';
+import SpecialDiscountView from './components/SpecialDiscountView';
 
 export default function App() {
   const [session, setSession] = useState(null);
@@ -383,6 +384,17 @@ export default function App() {
               </>
             )}
 
+            {/* ⭐ 특별 감면 대상 탭 노출 (원무팀 및 총괄 관리자 전용 - 일반/팀장 제외) */}
+            {(role === 'manager' || role === 'admin' || isSysAdmin) && (
+              <button 
+                onClick={() => handleTabChange('special-discount')} 
+                className={`nav-item ${activeTab === 'special-discount' ? 'active' : ''}`}
+                style={{ fontWeight: '600' }}
+              >
+                ⭐ 특별 감면 대상
+              </button>
+            )}
+
             {/* 권한 관리 탭 노출 (시스템 관리자, 원무팀 관리자, 팀 관리자) */}
             {(isSysAdmin || role === 'manager' || role === 'team_manager') && (
               <button 
@@ -490,6 +502,9 @@ export default function App() {
         {activeTab === 'department-settings' && <DepartmentSettings />}
         {activeTab === 'filter-settings' && <FilterSettings />}
         {activeTab === 'user-management' && <UserManagement currentUser={currentUser} />}
+        {activeTab === 'special-discount' && (role === 'manager' || role === 'admin' || isSysAdmin) && (
+          <SpecialDiscountView currentUser={currentUser} />
+        )}
       </main>
 
       {/* 소속 부서 변경 모달 */}

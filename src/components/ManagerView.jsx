@@ -294,17 +294,45 @@ export default function ManagerView({ currentUser }) {
     });
   };
 
+  // 특별 감면 대상 자동 매칭 상태
+  const [specialMatchInfo, setSpecialMatchInfo] = useState(null);
+
   // 상세 창 오픈 및 조회 감사 로그 등록
   const handleOpenDetail = async (req) => {
     setSelectedReq(req);
     setModalOpen(true);
     setModalLoading(true);
+    setSpecialMatchInfo(null);
 
     try {
       // 1. 기존 이력 정보 우선 로드
       await fetchHistoryLogs(req.id);
 
-      // 2. 조회 이력 access_logs 별도 안전 적재
+      // 2. 특별 감면 대상 자동 조회 (병록번호 / 성명 / 소속 기준 매칭)
+      try {
+        const { data: sMatch } = await supabase
+          .from('special_discounts')
+          .select('*')
+          .eq('status', '활성');
+
+        if (sMatch && sMatch.length > 0) {
+          const pNo = req.patient_no;
+          const pName = req.patient_name;
+          const aDept = req.applicant_dept;
+
+          const matched = sMatch.find(item => {
+            if (item.chart_no && pNo && item.chart_no !== '미생성' && item.chart_no === pNo) return true;
+            if (item.name && (item.name === pName || (aDept && item.name === aDept))) return true;
+            if (item.reason && aDept && item.reason.includes(aDept)) return true;
+            return false;
+          });
+          if (matched) setSpecialMatchInfo(matched);
+        }
+      } catch (matchErr) {
+        console.warn('특별 감면 매칭 실패:', matchErr);
+      }
+
+      // 3. 조회 이력 access_logs 별도 안전 적재
       try {
         const currentUserName = (userNamesMap && userNamesMap[currentUser.email]) || currentUser?.user_metadata?.full_name || '사용자';
         await supabase.from('access_logs').insert({
@@ -1346,6 +1374,21 @@ export default function ManagerView({ currentUser }) {
                 <div className="empty-state">결재 내역을 갱신 중입니다...</div>
               ) : (
                 <>
+                  {/* 특별 감면 대상 자동 매칭 알림 뱃지 */}
+                  {specialMatchInfo && (
+                    <div style={{ backgroundColor: '#fffbe8', border: '1px solid #fde68a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '20px' }}>⭐</span>
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e' }}>
+                          [특별 감면 대상 매칭] {specialMatchInfo.target_type}: {specialMatchInfo.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>
+                          지정 할인율: <strong>{specialMatchInfo.discount_rate}</strong> ({specialMatchInfo.category}) | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* 상세 정보 */}
                   <div className="log-section-title">감면 상세 기재 사항</div>
                   <div className="detail-grid" style={{ marginBottom: '20px' }}>
