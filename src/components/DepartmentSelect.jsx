@@ -19,6 +19,13 @@ const DepartmentSelect = ({ departments, value, onChange, disabled, placeholder 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [wrapperRef]);
 
+  // 부서 데이터 로드 시 모든 부서 트리를 기본적으로 모두 열림(expanded) 상태로 설정
+  useEffect(() => {
+    if (departments && departments.length > 0) {
+      setExpandedIds(departments.map(d => d.id));
+    }
+  }, [departments]);
+
   // 오픈 시 검색창 포커스
   useEffect(() => {
     if (isOpen && searchInputRef.current) {
