@@ -25,7 +25,7 @@ export default function SpecialDiscountView({ currentUser }) {
     target_type: '개인',
     name: '',
     chart_no: '',
-    category: '전체',
+    category: '급여포함',
     discount_rate: '100%',
     discount_outpatient: '',
     discount_inpatient: '',
@@ -73,7 +73,7 @@ export default function SpecialDiscountView({ currentUser }) {
       target_type: '개인',
       name: '',
       chart_no: '',
-      category: '전체',
+      category: '급여포함',
       discount_rate: '100%',
       discount_outpatient: '',
       discount_inpatient: '',
@@ -96,7 +96,7 @@ export default function SpecialDiscountView({ currentUser }) {
       target_type: item.target_type || '개인',
       name: item.name || '',
       chart_no: item.chart_no || '',
-      category: item.category || '전체',
+      category: item.category || '급여포함',
       discount_rate: item.discount_rate || '',
       discount_outpatient: item.discount_outpatient || '',
       discount_inpatient: item.discount_inpatient || '',
@@ -303,7 +303,7 @@ export default function SpecialDiscountView({ currentUser }) {
             target_type: targetType,
             name: nameVal,
             chart_no: chartNoVal,
-            category: getCellVal(idxCategory) || '전체',
+            category: getCellVal(idxCategory) || '급여포함',
             discount_rate: rateFormatted || '100%',
             reason: getCellVal(idxReason),
             requester: getCellVal(idxRequester) || '원장님 VIP',
@@ -761,11 +761,11 @@ export default function SpecialDiscountView({ currentUser }) {
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="form-select"
                   >
-                    <option value="전체">전체 (진료비 전액 항목)</option>
-                    <option value="외래">외래</option>
-                    <option value="입원">입원</option>
-                    <option value="검진">검진</option>
-                    <option value="기타">기타</option>
+                    <option value="급여포함">급여포함 (급여 + 비급여 항목 전체 적용)</option>
+                    <option value="비급여만">비급여만 (비급여 항목만 할인 적용)</option>
+                    {formData.category && formData.category !== '급여포함' && formData.category !== '비급여만' && (
+                      <option value={formData.category}>{formData.category}</option>
+                    )}
                   </select>
                 </div>
 
