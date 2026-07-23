@@ -36,13 +36,39 @@ export default function ApplicantView({ currentUser }) {
   const [editReasonCategory, setEditReasonCategory] = useState('');
   const [editDetails, setEditDetails] = useState('');
 
+  // 신청자 부서 정보 상태
+  const [userDeptName, setUserDeptName] = useState('미지정');
+
   const applicantEmail = currentUser?.email || '';
   const applicantName = currentUser?.user_metadata?.name || currentUser?.name || '홍신청';
 
   useEffect(() => {
     fetchMasterData();
     fetchMyRequests();
+    fetchUserDeptName();
   }, [currentUser]);
+
+  // 신청자 소속 부서명 조회 (department_id 기반)
+  const fetchUserDeptName = async () => {
+    const deptId = currentUser?.user_metadata?.department_id || currentUser?.department_id;
+    if (deptId) {
+      try {
+        const { data } = await supabase
+          .from('departments')
+          .select('name')
+          .eq('id', deptId)
+          .maybeSingle();
+        
+        if (data?.name) {
+          setUserDeptName(data.name);
+          return;
+        }
+      } catch (err) {
+        console.error('부서명 조회 오류:', err);
+      }
+    }
+    setUserDeptName(currentUser?.user_metadata?.department || '미지정');
+  };
 
   // 부서 및 사유 코드 정보 가져오기
   const fetchMasterData = async () => {
@@ -241,7 +267,7 @@ export default function ApplicantView({ currentUser }) {
         clinic_date: clinicDate,
         reason_category: reasonCategory,
         details: details,
-        applicant_dept: currentUser.user_metadata?.department || '미지정',
+        applicant_dept: userDeptName,
         applicant_email: applicantEmail,
         applicant_name: applicantName,
         ip_address: ip,
@@ -434,7 +460,7 @@ export default function ApplicantView({ currentUser }) {
             <label className="form-label">신청자 소속</label>
             <input 
               type="text" 
-              value={currentUser?.user_metadata?.department || '일반부서'} 
+              value={userDeptName} 
               disabled 
               className="form-input" 
               style={{ backgroundColor: '#f8fafc', cursor: 'not-allowed', color: '#6b7280' }}
