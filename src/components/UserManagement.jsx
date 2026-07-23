@@ -117,16 +117,29 @@ export default function UserManagement({ currentUser }) {
     }
   };
 
-  const handleStatusChange = async (email, newStatus) => {
+  // 상태 변경 가능 여부 확인 헬퍼 (팀 관리자는 일반 신청자만 가능, 원무팀 관리자/시스템 관리자는 전체 가능)
+  const canChangeStatus = (targetUser) => {
+    if (isSysAdmin || currentUserRole === 'manager') return true;
+    if (currentUserRole === 'team_manager') {
+      return targetUser.role === 'applicant';
+    }
+    return false;
+  };
+
+  const handleStatusChange = async (targetUser, newStatus) => {
+    if (!canChangeStatus(targetUser)) {
+      alert('팀 관리자는 일반 신청자의 권한 상태만 변경할 수 있습니다.');
+      return;
+    }
     setActionLoading(true);
     try {
       const { error } = await supabase
         .from('users')
         .update({ status: newStatus })
-        .eq('email', email);
+        .eq('email', targetUser.email);
       
       if (error) throw error;
-      alert('사용자 상태가 변경되었습니다.');
+      alert('사용자 상태가 성공적으로 변경되었습니다.');
       await fetchData();
     } catch (err) {
       alert(`상태 변경 중 오류가 발생했습니다: ${err.message}`);
@@ -418,8 +431,9 @@ export default function UserManagement({ currentUser }) {
                       <select
                         className="form-select"
                         value={user.status}
-                        onChange={(e) => handleStatusChange(user.email, e.target.value)}
-                        disabled={actionLoading}
+                        onChange={(e) => handleStatusChange(user, e.target.value)}
+                        disabled={actionLoading || !canChangeStatus(user)}
+                        title={!canChangeStatus(user) ? '팀 관리자는 일반 신청자의 상태만 변경할 수 있습니다.' : ''}
                         style={{
                           width: '120px',
                           padding: '4px 8px',
@@ -428,7 +442,9 @@ export default function UserManagement({ currentUser }) {
                           color: user.status === 'approved' ? '#15803d' : user.status === 'rejected' ? '#b91c1c' : '#b45309',
                           backgroundColor: user.status === 'approved' ? '#f0fdf4' : user.status === 'rejected' ? '#fef2f2' : '#fffbe8',
                           borderColor: user.status === 'approved' ? '#bbf7d0' : user.status === 'rejected' ? '#fecaca' : '#fde68a',
-                          borderRadius: '6px'
+                          borderRadius: '6px',
+                          opacity: canChangeStatus(user) ? 1 : 0.6,
+                          cursor: canChangeStatus(user) ? 'pointer' : 'not-allowed'
                         }}
                       >
                         <option value="approved">정상 승인</option>
