@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { PieChart, Pie, Cell, Tooltip, Legend, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from 'recharts';
+import * as XLSX from 'xlsx';
 
 export default function ManagerView({ currentUser }) {
   const [requests, setRequests] = useState([]);
@@ -59,6 +60,13 @@ export default function ManagerView({ currentUser }) {
 
   // 차트 색상 팔레트 (지정된 브랜드 컬러 및 파생 색상)
   const COLORS = ['#004680', '#39a845', '#ffca4b', '#2a6b9c', '#5ab764', '#ffd36c', '#558fb8', '#7bc584', '#ffdc8c'];
+
+  // 엑셀/구글시트 가져오기 모달 상태
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [parsedImportData, setParsedImportData] = useState([]);
+  const [importFileName, setImportFileName] = useState('');
+  const [defaultImportStatus, setDefaultImportStatus] = useState('최종승인');
 
   useEffect(() => {
     fetchMasterData();
@@ -359,6 +367,130 @@ export default function ManagerView({ currentUser }) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // 엑셀/CSV 파일 파싱
+  const handleImportFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setImportFileName(file.name);
+    setImportLoading(true);
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rawJson = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+
+        if (rawJson.length < 2) {
+          alert('파일에 데이터가 존재하지 않습니다.');
+          setImportLoading(false);
+          return;
+        }
+
+        // 헤더 행 위치 찾기
+        let headerRowIndex = 0;
+        for (let i = 0; i < Math.min(rawJson.length, 5); i++) {
+          const rowStr = rawJson[i].join(' ');
+          if (rowStr.includes('신청날짜') || rowStr.includes('병록번호') || rowStr.includes('성명') || rowStr.includes('신청인')) {
+            headerRowIndex = i;
+            break;
+          }
+        }
+
+        const headers = rawJson[headerRowIndex].map(h => String(h).trim());
+        const dataRows = rawJson.slice(headerRowIndex + 1);
+
+        const findColIndex = (keywords) => headers.findIndex(h => keywords.some(k => h.toLowerCase().includes(k.toLowerCase())));
+
+        const idxDate = findColIndex(['신청날짜', '신청일자', '신청일']);
+        const idxType = findColIndex(['감면부문', '감면구분', '구분']);
+        const idxClinicDate = findColIndex(['진료일자', '진료일']);
+        const idxPatientNo = findColIndex(['병록번호', '등록번호']);
+        const idxPatientName = findColIndex(['성명', '대상자', '환자명']);
+        const idxClinicDept = findColIndex(['진료과']);
+        const idxAmount = findColIndex(['비고', '할인금액', '감면금액', '금액']);
+        const idxReason = findColIndex(['신청사유', '사유']);
+        const idxApplicantDept = findColIndex(['신청인 소속', '신청인소속', '소속']);
+        const idxApplicantName = findColIndex(['신청인 이름', '신청인이름', '신청자']);
+        const idxRelation = findColIndex(['관계']);
+
+        const formatted = [];
+
+        dataRows.forEach((row) => {
+          if (!row || row.length === 0) return;
+
+          const patientName = idxPatientName !== -1 ? String(row[idxPatientName] || '').trim() : '';
+          const patientNo = idxPatientNo !== -1 ? String(row[idxPatientNo] || '').trim() : '';
+
+          if (!patientName && !patientNo) return;
+
+          const parseDateStr = (val) => {
+            if (!val) return new Date().toISOString().split('T')[0];
+            const str = String(val).replace(/\./g, '-').replace(/\s+/g, '').replace(/-$/g, '');
+            const parts = str.split('-');
+            if (parts.length === 3) {
+              return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            }
+            return new Date().toISOString().split('T')[0];
+          };
+
+          const parseAmount = (val) => {
+            if (!val) return 0;
+            const numStr = String(val).replace(/[^0-9]/g, '');
+            return parseInt(numStr, 10) || 0;
+          };
+
+          formatted.push({
+            created_at: idxDate !== -1 && row[idxDate] ? new Date(parseDateStr(row[idxDate])).toISOString() : new Date().toISOString(),
+            discount_type: idxType !== -1 && row[idxType] ? String(row[idxType]).trim() : '외래',
+            clinic_date: idxClinicDate !== -1 ? parseDateStr(row[idxClinicDate]) : '',
+            patient_no: patientNo,
+            patient_name: patientName,
+            clinic_dept: idxClinicDept !== -1 ? String(row[idxClinicDept]).trim() : '미지정',
+            discount_amount: idxAmount !== -1 ? parseAmount(row[idxAmount]) : 0,
+            reason_category: idxReason !== -1 && row[idxReason] ? String(row[idxReason]).trim() : '기타',
+            applicant_dept: idxApplicantDept !== -1 && row[idxApplicantDept] ? String(row[idxApplicantDept]).trim() : '미지정',
+            applicant_name: idxApplicantName !== -1 && row[idxApplicantName] ? String(row[idxApplicantName]).trim() : '과거이관자',
+            applicant_email: 'imported@hnh.local',
+            relationship: idxRelation !== -1 && row[idxRelation] ? String(row[idxRelation]).trim() : '기타',
+            status: defaultImportStatus,
+            reason_detail: '구글 스프레드시트 과거 내역 일괄 이관'
+          });
+        });
+
+        setParsedImportData(formatted);
+      } catch (err) {
+        alert(`파일 읽기 오류: ${err.message}`);
+      } finally {
+        setImportLoading(false);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  // DB에 파싱된 데이터 저장
+  const handleSaveImportData = async () => {
+    if (parsedImportData.length === 0) return;
+    setImportLoading(true);
+    try {
+      const payload = parsedImportData.map(item => ({ ...item, status: defaultImportStatus }));
+      const { error } = await supabase.from('discount_requests').insert(payload);
+      if (error) throw error;
+
+      alert(`총 ${parsedImportData.length}건의 감면 정보가 성공적으로 등록되었습니다.`);
+      setImportModalOpen(false);
+      setParsedImportData([]);
+      setImportFileName('');
+      fetchAllData();
+    } catch (err) {
+      alert(`DB 저장 중 오류 발생: ${err.message}`);
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   const formatDate = (isoString) => {
@@ -861,9 +993,14 @@ export default function ManagerView({ currentUser }) {
       <div className="glass-card" style={{ marginBottom: '24px' }}>
         <div className="flex justify-between items-center" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
           <h2 className="log-section-title" style={{ fontSize: '18px', borderBottom: 'none', paddingBottom: 0, margin: 0 }}>전체 감면 신청서 목록</h2>
-          <button onClick={handleExportCSV} className="btn btn-accent hide-on-mobile" style={{ padding: '8px 12px', fontSize: '13px', whiteSpace: 'nowrap' }}>
-            엑셀 다운로드
-          </button>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={() => setImportModalOpen(true)} className="btn btn-primary" style={{ padding: '8px 12px', fontSize: '13px', whiteSpace: 'nowrap' }}>
+              📥 구글 시트/엑셀 가져오기
+            </button>
+            <button onClick={handleExportCSV} className="btn btn-accent hide-on-mobile" style={{ padding: '8px 12px', fontSize: '13px', whiteSpace: 'nowrap' }}>
+              엑셀 다운로드
+            </button>
+          </div>
         </div>
 
         {loading ? (
@@ -1100,6 +1237,123 @@ export default function ManagerView({ currentUser }) {
                   최종결재 취소 (내용 정정용)
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 구글 시트 / 엑셀 일괄 이관 모달 */}
+      {importModalOpen && (
+        <div 
+          className="modal-overlay" 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000 }}
+          onClick={(e) => e.target.className === 'modal-overlay' && !importLoading && setImportModalOpen(false)}
+        >
+          <div className="glass-card animate-in" style={{ width: '750px', maxWidth: '95%', padding: '24px', backgroundColor: '#ffffff', overflowY: 'auto', maxHeight: '90vh', border: '1px solid rgba(0,0,0,0.1)', boxShadow: 'var(--shadow-lg)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e5e7eb', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#004680', margin: 0 }}>
+                📥 구글 스프레드시트 / 엑셀 데이터 일괄 가져오기
+              </h3>
+              <button onClick={() => !importLoading && setImportModalOpen(false)} style={{ background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <div style={{ fontSize: '13px', color: '#4b5563', lineHeight: '1.6', marginBottom: '16px', backgroundColor: '#f0f9ff', padding: '12px 16px', borderRadius: '6px', border: '1px solid #bae6fd' }}>
+              💡 <strong>구글 스프레드시트 가져오기 방법:</strong><br />
+              1. 구글 스프레드시트 상단 메뉴 <strong>[파일] ➔ [다운로드] ➔ [쉼표로 구분된 값(.csv)]</strong> 또는 <strong>[Microsoft Excel(.xlsx)]</strong> 선택하여 파일 다운로드<br />
+              2. 아래 파일 선택 버튼으로 다운로드받은 파일 선택 후 <strong>[DB에 일괄 등록]</strong> 클릭!
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '16px' }}>
+              <label className="form-label" style={{ fontWeight: '600' }}>파일 선택 (.csv, .xlsx, .xls)</label>
+              <input 
+                type="file" 
+                accept=".csv, .xlsx, .xls"
+                onChange={handleImportFileUpload}
+                disabled={importLoading}
+                className="form-input" 
+                style={{ padding: '8px' }}
+              />
+            </div>
+
+            {parsedImportData.length > 0 && (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#059669' }}>
+                    ✅ 총 {parsedImportData.length}건의 감면 정보가 정상 파싱되었습니다.
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#4b5563', fontWeight: '500' }}>등록 처리 상태:</span>
+                    <select 
+                      value={defaultImportStatus} 
+                      onChange={(e) => setDefaultImportStatus(e.target.value)}
+                      className="form-select"
+                      style={{ padding: '4px 8px', fontSize: '12px', width: '110px' }}
+                    >
+                      <option value="최종승인">최종승인</option>
+                      <option value="담당자 승인">담당자 승인</option>
+                      <option value="신청완료">신청완료</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 데이터 미리보기 테이블 */}
+                <div className="table-responsive" style={{ maxHeight: '220px', overflowY: 'auto', marginBottom: '20px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+                  <table className="custom-table compact" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                    <thead>
+                      <tr>
+                        <th>신청일자</th>
+                        <th>신청부서</th>
+                        <th>신청자</th>
+                        <th>성명</th>
+                        <th>병록번호</th>
+                        <th>진료과</th>
+                        <th>구분</th>
+                        <th>할인금액</th>
+                        <th>신청사유</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {parsedImportData.slice(0, 10).map((row, idx) => (
+                        <tr key={idx}>
+                          <td>{row.created_at.split('T')[0]}</td>
+                          <td>{row.applicant_dept}</td>
+                          <td>{row.applicant_name}</td>
+                          <td>{row.patient_name}</td>
+                          <td>{row.patient_no}</td>
+                          <td>{row.clinic_dept}</td>
+                          <td>{row.discount_type}</td>
+                          <td>{Number(row.discount_amount).toLocaleString()}원</td>
+                          <td style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.reason_category}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {parsedImportData.length > 10 && (
+                    <div style={{ textAlign: 'center', fontSize: '11px', color: '#64748b', padding: '6px', backgroundColor: '#f8fafc' }}>
+                      ... 외 {parsedImportData.length - 10}건의 데이터가 더 포함되어 있습니다.
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button 
+                onClick={() => setImportModalOpen(false)}
+                disabled={importLoading}
+                className="btn btn-secondary"
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+              >
+                취소
+              </button>
+              <button 
+                onClick={handleSaveImportData}
+                disabled={importLoading || parsedImportData.length === 0}
+                className="btn btn-primary"
+                style={{ padding: '8px 16px', fontSize: '13px' }}
+              >
+                {importLoading ? '이관 등록 중...' : `DB에 일괄 등록 (${parsedImportData.length}건)`}
+              </button>
             </div>
           </div>
         </div>
