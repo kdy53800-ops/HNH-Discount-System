@@ -507,18 +507,25 @@ export default function ManagerView({ currentUser }) {
           return foundIdx !== -1 ? foundIdx : defaultIdx;
         };
 
-        // 컬럼 위치 탐색 (헤더명 매핑 or 구글 시트 양식 기본 순서 0..10)
+        // 상세내용 컬럼 존재 여부 확인
+        const hasDetailHeader = headers.some(h => ['상세내용', '상세', '세부내용', '비고내용'].some(k => h.toLowerCase().includes(k)));
+
+        // 컬럼 위치 탐색 (헤더명 매핑 or 구글 시트 양식 유연한 기본 순서)
         const idxDate = findColIndex(['신청날짜', '신청일자', '신청일'], 0);
         const idxType = findColIndex(['감면부문', '감면구분', '구분'], 1);
         const idxClinicDate = findColIndex(['진료일자', '진료일'], 2);
         const idxPatientNo = findColIndex(['병록번호', '등록번호'], 3);
         const idxPatientName = findColIndex(['성명', '대상자', '환자명'], 4);
         const idxClinicDept = findColIndex(['진료과'], 5);
-        const idxAmount = findColIndex(['비고', '할인금액', '감면금액', '금액'], 6);
+        const idxAmount = findColIndex(['비고(할인금액)', '할인금액', '감면금액', '비고'], 6);
         const idxReason = findColIndex(['신청사유', '사유'], 7);
-        const idxApplicantDept = findColIndex(['신청인 소속', '신청인소속', '소속'], 8);
-        const idxApplicantName = findColIndex(['신청인 이름', '신청인이름', '신청자'], 9);
-        const idxRelation = findColIndex(['관계'], 10);
+        const idxDetail = findColIndex(['상세내용', '상세', '세부내용', '비고내용'], hasDetailHeader ? 8 : -1);
+
+        // 상세내용 컬럼 유무에 따른 후속 컬럼 기본 인덱스 보정 (8 또는 9)
+        const baseOffset = (hasDetailHeader || idxDetail !== -1) ? 1 : 0;
+        const idxApplicantDept = findColIndex(['신청인 소속', '신청인소속', '신청부서', '소속'], 8 + baseOffset);
+        const idxApplicantName = findColIndex(['신청인 이름', '신청인이름', '신청자'], 9 + baseOffset);
+        const idxRelation = findColIndex(['관계'], 10 + baseOffset);
 
         const formatted = [];
 
@@ -535,6 +542,8 @@ export default function ManagerView({ currentUser }) {
           const patientNo = getCellVal(idxPatientNo);
           const rawDate = getCellVal(idxDate);
           const rawAmount = getCellVal(idxAmount);
+          const reasonVal = getCellVal(idxReason);
+          const detailVal = getCellVal(idxDetail);
 
           // 헤더 행 재등장 시 스킵
           if (patientName === '성명' || patientNo === '병록번호' || rawDate === '신청날짜') return;
@@ -555,6 +564,10 @@ export default function ManagerView({ currentUser }) {
             return parseInt(numStr, 10) || 0;
           };
 
+          // 사유 카테고리 및 상세 내용 자동 정리
+          const finalReasonCategory = reasonVal || '의료진 요청';
+          const finalDetails = detailVal || (reasonVal && reasonVal !== finalReasonCategory ? reasonVal : '구글 스프레드시트 과거 내역 일괄 이관');
+
           formatted.push({
             created_at: rawDate ? new Date(parseDateStr(rawDate)).toISOString() : new Date().toISOString(),
             discount_type: getCellVal(idxType) || '외래',
@@ -563,14 +576,14 @@ export default function ManagerView({ currentUser }) {
             patient_name: patientName || '미상',
             clinic_dept: getCellVal(idxClinicDept) || '미지정',
             discount_amount: parseAmount(rawAmount),
-            reason_category: getCellVal(idxReason) || '기타',
+            reason_category: finalReasonCategory,
+            details: finalDetails,
             applicant_dept: getCellVal(idxApplicantDept) || '미지정',
             applicant_name: getCellVal(idxApplicantName) || '과거이관자',
             applicant_email: 'imported@hnh.local',
             relationship: getCellVal(idxRelation) || '기타',
             status: defaultImportStatus,
-            details: '구글 스프레드시트 과거 내역 일괄 이관',
-            admin_notes: '구글 스프레드시트 과거 내역 일괄 이관'
+            admin_notes: `[일괄이관] ${finalDetails}`
           });
         });
 
