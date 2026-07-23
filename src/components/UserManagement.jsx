@@ -197,17 +197,15 @@ export default function UserManagement({ currentUser }) {
     return roles[role] || role;
   };
 
-  // 승인 대기 목록 필터링 (팀 관리자는 본인 부서만, 원무팀 관리자/시스템관리자는 전체 조회)
+  // 승인 대기 목록 필터링 (팀 관리자는 소속 부서 상관없이 전체 조회 및 승인 가능)
   const pendingUsers = users.filter(u => u.status === 'pending').filter(u => {
-    if (isSysAdmin || currentUserRole === 'manager') return true;
-    if (currentUserRole === 'team_manager' && u.department_id === currentUserDeptId) return true;
+    if (isSysAdmin || currentUserRole === 'manager' || currentUserRole === 'team_manager') return true;
     return false;
   });
 
-  // 이름 변경 승인 대기 목록 필터링
+  // 이름 변경 승인 대기 목록 필터링 (팀 관리자는 소속 부서 상관없이 전체 조회 및 승인 가능)
   const pendingNameUsers = users.filter(u => u.requested_name && u.requested_name !== u.name).filter(u => {
-    if (isSysAdmin || currentUserRole === 'manager') return true;
-    if (currentUserRole === 'team_manager' && u.department_id === currentUserDeptId) return true;
+    if (isSysAdmin || currentUserRole === 'manager' || currentUserRole === 'team_manager') return true;
     return false;
   });
 
@@ -377,7 +375,7 @@ export default function UserManagement({ currentUser }) {
                       {user.requested_name && user.requested_name !== user.name && (
                         <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: '500', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <span>➡️ 요청: {user.requested_name}</span>
-                          {(isSysAdmin || currentUserRole === 'manager' || (currentUserRole === 'team_manager' && user.department_id === currentUserDeptId)) && (
+                          {(isSysAdmin || currentUserRole === 'manager' || currentUserRole === 'team_manager') && (
                             <span style={{ marginLeft: '4px' }}>
                               <button
                                 onClick={() => handleApproveNameChange(user.email, user.requested_name)}
