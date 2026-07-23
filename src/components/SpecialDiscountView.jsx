@@ -27,6 +27,9 @@ export default function SpecialDiscountView({ currentUser }) {
     chart_no: '',
     category: '전체',
     discount_rate: '100%',
+    discount_outpatient: '',
+    discount_inpatient: '',
+    discount_checkup: '',
     reason: '',
     requester: '',
     request_date: new Date().toISOString().split('T')[0],
@@ -72,6 +75,9 @@ export default function SpecialDiscountView({ currentUser }) {
       chart_no: '',
       category: '전체',
       discount_rate: '100%',
+      discount_outpatient: '',
+      discount_inpatient: '',
+      discount_checkup: '',
       reason: '',
       requester: '',
       request_date: new Date().toISOString().split('T')[0],
@@ -92,6 +98,9 @@ export default function SpecialDiscountView({ currentUser }) {
       chart_no: item.chart_no || '',
       category: item.category || '전체',
       discount_rate: item.discount_rate || '',
+      discount_outpatient: item.discount_outpatient || '',
+      discount_inpatient: item.discount_inpatient || '',
+      discount_checkup: item.discount_checkup || '',
       reason: item.reason || '',
       requester: item.requester || '',
       request_date: item.request_date || '',
@@ -579,9 +588,29 @@ export default function SpecialDiscountView({ currentUser }) {
                       </span>
                     </td>
                     <td>
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669' }}>
-                        {item.discount_rate}
-                      </span>
+                      {(item.discount_outpatient || item.discount_inpatient || item.discount_checkup) ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '11px' }}>
+                          {item.discount_outpatient && (
+                            <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              외래: <strong>{item.discount_outpatient}</strong>
+                            </span>
+                          )}
+                          {item.discount_inpatient && (
+                            <span style={{ backgroundColor: '#fef3c7', color: '#b45309', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              입원: <strong>{item.discount_inpatient}</strong>
+                            </span>
+                          )}
+                          {item.discount_checkup && (
+                            <span style={{ backgroundColor: '#f3e8ff', color: '#6b21a8', padding: '1px 5px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              검진: <strong>{item.discount_checkup}</strong>
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#059669' }}>
+                          {item.discount_rate}
+                        </span>
+                      )}
                     </td>
                     <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
                       {item.reason || '-'}
@@ -672,7 +701,7 @@ export default function SpecialDiscountView({ currentUser }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label required">할인율 (%)</label>
+                  <label className="form-label required">대표 / 통합 할인율 (%)</label>
                   <input
                     type="text"
                     value={formData.discount_rate}
@@ -681,6 +710,48 @@ export default function SpecialDiscountView({ currentUser }) {
                     required
                     className="form-input"
                   />
+                </div>
+
+                {/* 진료구분별 세부 할인율 입력 섹션 */}
+                <div className="form-group" style={{ gridColumn: 'span 2', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <label className="form-label" style={{ fontWeight: 'bold', color: '#004680', marginBottom: '8px', display: 'block' }}>
+                    🩺 진료 구분별 세부 할인율 설정 (외래 / 입원 / 검진 개별 지정 시 입력)
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>외래 할인율</span>
+                      <input
+                        type="text"
+                        value={formData.discount_outpatient}
+                        onChange={(e) => setFormData({ ...formData, discount_outpatient: e.target.value })}
+                        placeholder="예: 20%"
+                        className="form-input"
+                        style={{ fontSize: '12px' }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>입원 할인율</span>
+                      <input
+                        type="text"
+                        value={formData.discount_inpatient}
+                        onChange={(e) => setFormData({ ...formData, discount_inpatient: e.target.value })}
+                        placeholder="예: 10%"
+                        className="form-input"
+                        style={{ fontSize: '12px' }}
+                      />
+                    </div>
+                    <div>
+                      <span style={{ fontSize: '12px', color: '#475569', display: 'block', marginBottom: '4px' }}>검진 할인율</span>
+                      <input
+                        type="text"
+                        value={formData.discount_checkup}
+                        onChange={(e) => setFormData({ ...formData, discount_checkup: e.target.value })}
+                        placeholder="예: 30%"
+                        className="form-input"
+                        style={{ fontSize: '12px' }}
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div className="form-group">

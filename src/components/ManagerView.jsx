@@ -1375,19 +1375,35 @@ export default function ManagerView({ currentUser }) {
               ) : (
                 <>
                   {/* 특별 감면 대상 자동 매칭 알림 뱃지 */}
-                  {specialMatchInfo && (
-                    <div style={{ backgroundColor: '#fffbe8', border: '1px solid #fde68a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '20px' }}>⭐</span>
-                      <div>
-                        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e' }}>
-                          [특별 감면 대상 매칭] {specialMatchInfo.target_type}: {specialMatchInfo.name}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>
-                          지정 할인율: <strong>{specialMatchInfo.discount_rate}</strong> ({specialMatchInfo.category}) | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
+                  {specialMatchInfo && (() => {
+                    const reqType = selectedReq?.discount_type || '';
+                    let matchedRate = specialMatchInfo.discount_rate;
+                    let typeLabel = '';
+                    if (reqType.includes('외래') && specialMatchInfo.discount_outpatient) {
+                      matchedRate = specialMatchInfo.discount_outpatient;
+                      typeLabel = '(외래 세부 적용)';
+                    } else if (reqType.includes('입원') && specialMatchInfo.discount_inpatient) {
+                      matchedRate = specialMatchInfo.discount_inpatient;
+                      typeLabel = '(입원 세부 적용)';
+                    } else if (reqType.includes('검진') && specialMatchInfo.discount_checkup) {
+                      matchedRate = specialMatchInfo.discount_checkup;
+                      typeLabel = '(검진 세부 적용)';
+                    }
+
+                    return (
+                      <div style={{ backgroundColor: '#fffbe8', border: '1px solid #fde68a', padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '20px' }}>⭐</span>
+                        <div>
+                          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e' }}>
+                            [특별 감면 대상 매칭] {specialMatchInfo.target_type}: {specialMatchInfo.name}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>
+                            현재 신청인({reqType}) 적용 할인율: <strong style={{ color: '#059669', fontSize: '13.5px' }}>{matchedRate}</strong> {typeLabel} | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* 상세 정보 */}
                   <div className="log-section-title">감면 상세 기재 사항</div>

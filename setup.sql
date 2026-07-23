@@ -114,7 +114,10 @@ CREATE TABLE special_discounts (
     name text NOT NULL,                -- 이름 또는 기관/단체명
     chart_no text,                     -- 차트번호(병록번호) 또는 적용 대상 범위
     category text NOT NULL DEFAULT '전체', -- 구분 (전체, 외래, 입원, 검진 등)
-    discount_rate text NOT NULL,       -- 할인율 (예: 100%, 50%, 20% 등)
+    discount_rate text NOT NULL,       -- 통합/대표 할인율 (예: 100%, 50% 등)
+    discount_outpatient text,          -- 외래 진료 할인율 (예: 20%)
+    discount_inpatient text,           -- 입원 진료 할인율 (예: 10%)
+    discount_checkup text,             -- 종합검진 할인율 (예: 30%)
     reason text,                       -- 사유 (예: 신라대학교 이사장님, 협약기관)
     requester text,                    -- 요청자 (예: 백선미 병원장님)
     request_date date,                 -- 요청일자 / 등록일자
@@ -126,6 +129,11 @@ CREATE TABLE special_discounts (
     created_at timestamp with time zone DEFAULT now(),
     updated_at timestamp with time zone DEFAULT now()
 );
+
+-- 기존 스키마 패치용 마이그레이션 구문
+ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_outpatient text;
+ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_inpatient text;
+ALTER TABLE special_discounts ADD COLUMN IF NOT EXISTS discount_checkup text;
 
 -- ==========================================
 -- 초기 시드 데이터 삽입
