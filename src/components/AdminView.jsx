@@ -47,6 +47,76 @@ export default function AdminView({ currentUser }) {
   const [editLogs, setEditLogs] = useState([]);
   const [accessLogs, setAccessLogs] = useState([]);
 
+  // 정렬 상태
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const renderSortHeader = (field, label, isHideMobile = false) => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)} 
+        className={isHideMobile ? 'hide-on-mobile' : ''}
+        style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.15s' }}
+        title={`${label} 기준 ${isActive && sortOrder === 'asc' ? '내림차순' : '오름차순'} 정렬`}
+      >
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span>{label}</span>
+          <span style={{ fontSize: '11px', color: isActive ? '#004680' : '#9ca3af', fontWeight: 'bold' }}>
+            {isActive ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
+  const sortedRequests = [...requests].sort((a, b) => {
+    let aVal = '';
+    let bVal = '';
+
+    switch (sortField) {
+      case 'created_at':
+        aVal = a.created_at || '';
+        bVal = b.created_at || '';
+        break;
+      case 'applicant_name':
+        aVal = a.applicant_name || '';
+        bVal = b.applicant_name || '';
+        break;
+      case 'patient_name':
+        aVal = a.patient_name || '';
+        bVal = b.patient_name || '';
+        break;
+      case 'discount_type':
+        aVal = a.discount_type || '';
+        bVal = b.discount_type || '';
+        break;
+      case 'reason_category':
+        aVal = a.reason_category || '';
+        bVal = b.reason_category || '';
+        break;
+      case 'status':
+        aVal = a.status || '';
+        bVal = b.status || '';
+        break;
+      default:
+        aVal = a.created_at || '';
+        bVal = b.created_at || '';
+    }
+
+    const comparison = String(aVal).localeCompare(String(bVal), 'ko', { numeric: true, sensitivity: 'base' });
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
   useEffect(() => {
     fetchMasterData();
     fetchRequests();
@@ -500,17 +570,17 @@ export default function AdminView({ currentUser }) {
             <table className="custom-table compact">
               <thead>
                 <tr>
-                  <th>신청일</th>
-                  <th className="hide-on-mobile">신청자</th>
-                  <th>대상자</th>
-                  <th className="hide-on-mobile">감면구분</th>
-                  <th className="hide-on-mobile">감면사유</th>
-                  <th>상태</th>
+                  {renderSortHeader('created_at', '신청일')}
+                  {renderSortHeader('applicant_name', '신청자', true)}
+                  {renderSortHeader('patient_name', '대상자')}
+                  {renderSortHeader('discount_type', '감면구분', true)}
+                  {renderSortHeader('reason_category', '감면사유', true)}
+                  {renderSortHeader('status', '상태')}
                   <th className="hide-on-mobile">기능</th>
                 </tr>
               </thead>
               <tbody>
-                {requests.map((req) => (
+                {sortedRequests.map((req) => (
                   <tr key={req.id} onClick={() => handleOpenDetail(req)}>
                     <td>{formatDate(req.created_at)}</td>
                     <td className="hide-on-mobile">{req.applicant_name} ({req.applicant_dept})</td>

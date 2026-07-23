@@ -51,8 +51,10 @@ export default function ManagerView({ currentUser }) {
   const [relationships, setRelationships] = useState([]);
   const [discountTypes, setDiscountTypes] = useState([]);
 
-  // 페이지네이션 상태
+  // 페이지네이션 및 정렬 상태
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('desc');
   const ITEMS_PER_PAGE = 20;
 
   // 차트 색상 팔레트 (지정된 브랜드 컬러 및 파생 색상)
@@ -391,8 +393,85 @@ export default function ManagerView({ currentUser }) {
     return mapping[fieldName] || fieldName;
   };
 
+  // 컬럼 헤더 클릭 시 정렬 핑퐁
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  // 정렬 헤더 Cell 렌더링 헬퍼
+  const renderSortHeader = (field, label, isHideMobile = false) => {
+    const isActive = sortField === field;
+    return (
+      <th 
+        onClick={() => handleSort(field)} 
+        className={isHideMobile ? 'hide-on-mobile' : ''}
+        style={{ cursor: 'pointer', userSelect: 'none', transition: 'background-color 0.15s' }}
+        title={`${label} 기준 ${isActive && sortOrder === 'asc' ? '내림차순' : '오름차순'} 정렬`}
+      >
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <span>{label}</span>
+          <span style={{ fontSize: '11px', color: isActive ? '#004680' : '#9ca3af', fontWeight: 'bold' }}>
+            {isActive ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
+          </span>
+        </div>
+      </th>
+    );
+  };
+
+  // 목록 정렬 처리
+  const sortedRequests = [...requests].sort((a, b) => {
+    let aVal = '';
+    let bVal = '';
+
+    switch (sortField) {
+      case 'created_at':
+        aVal = a.created_at || '';
+        bVal = b.created_at || '';
+        break;
+      case 'applicant_dept':
+        aVal = a.applicant_dept || '';
+        bVal = b.applicant_dept || '';
+        break;
+      case 'applicant_name':
+        aVal = a.applicant_name || '';
+        bVal = b.applicant_name || '';
+        break;
+      case 'patient_name':
+        aVal = a.patient_name || '';
+        bVal = b.patient_name || '';
+        break;
+      case 'discount_type':
+        aVal = a.discount_type || '';
+        bVal = b.discount_type || '';
+        break;
+      case 'reason_category':
+        aVal = a.reason_category || '';
+        bVal = b.reason_category || '';
+        break;
+      case 'discount_amount':
+        const numA = Number(a.discount_amount) || 0;
+        const numB = Number(b.discount_amount) || 0;
+        return sortOrder === 'asc' ? numA - numB : numB - numA;
+      case 'status':
+        aVal = a.status || '';
+        bVal = b.status || '';
+        break;
+      default:
+        aVal = a.created_at || '';
+        bVal = b.created_at || '';
+    }
+
+    const comparison = String(aVal).localeCompare(String(bVal), 'ko', { numeric: true, sensitivity: 'base' });
+    return sortOrder === 'asc' ? comparison : -comparison;
+  });
+
   const totalPages = Math.max(1, Math.ceil(requests.length / ITEMS_PER_PAGE));
-  const paginatedRequests = requests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+  const paginatedRequests = sortedRequests.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const activeFilterCount = [
     filterStartDate, filterEndDate, filterStatus, filterType, filterPatientNo, filterPatientName, filterRelationship, filterClinicDept, filterClinicDate, filterReason, filterApplicantDept, filterApplicant
@@ -865,14 +944,14 @@ export default function ManagerView({ currentUser }) {
             <table className="custom-table compact">
               <thead>
                 <tr>
-                  <th>신청일</th>
-                  <th className="hide-on-mobile">신청부서</th>
-                  <th className="hide-on-mobile">신청자</th>
-                  <th>대상자(병록번호)</th>
-                  <th className="hide-on-mobile">구분</th>
-                  <th className="hide-on-mobile">사유</th>
-                  <th className="hide-on-mobile">감면금액</th>
-                  <th>상태</th>
+                  {renderSortHeader('created_at', '신청일')}
+                  {renderSortHeader('applicant_dept', '신청부서', true)}
+                  {renderSortHeader('applicant_name', '신청자', true)}
+                  {renderSortHeader('patient_name', '대상자(병록번호)')}
+                  {renderSortHeader('discount_type', '구분', true)}
+                  {renderSortHeader('reason_category', '사유', true)}
+                  {renderSortHeader('discount_amount', '감면금액', true)}
+                  {renderSortHeader('status', '상태')}
                   <th className="hide-on-mobile">결재</th>
                 </tr>
               </thead>
