@@ -717,7 +717,7 @@ export default function ManagerView({ currentUser }) {
   const renderPieChartCard = (title, data, colorPaletteOffset = 0, isCountOnly = false) => {
     if (!data || data.length === 0) {
       return (
-        <div className="glass-card" style={{ height: '210px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="glass-card" style={{ height: '235px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px' }}>{title}</h3>
           <div className="empty-state" style={{ padding: '24px 0', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>데이터가 존재하지 않습니다.</div>
         </div>
@@ -727,7 +727,7 @@ export default function ManagerView({ currentUser }) {
     const totalValue = data.reduce((acc, item) => acc + (Number(item.value) || 0), 0);
 
     return (
-      <div className="glass-card" style={{ height: '210px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <div className="glass-card" style={{ height: '235px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <h3 className="form-label" style={{ fontSize: '15px', color: '#1e293b', marginBottom: '10px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={title}>
           {title}
         </h3>
@@ -741,7 +741,7 @@ export default function ManagerView({ currentUser }) {
                 <Pie
                   data={data}
                   cx="50%" cy="50%"
-                  innerRadius={25} outerRadius={55}
+                  innerRadius={25} outerRadius={52}
                   dataKey="value"
                   labelLine={false}
                   label={renderCustomizedLabel}
@@ -755,8 +755,8 @@ export default function ManagerView({ currentUser }) {
             </ResponsiveContainer>
           </div>
 
-          {/* 우측 세부 수치 리스트 (고정 높이 & 부드러운 내부 스크롤) */}
-          <div style={{ flex: 1, minWidth: 0, height: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px', paddingRight: '2px' }}>
+          {/* 우측 세부 수치 리스트 (여유 있는 높이 & 부드러운 스크롤) */}
+          <div style={{ flex: 1, minWidth: 0, height: '100%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px', paddingTop: '2px', paddingBottom: '2px' }}>
             {data.map((entry, index) => {
               const color = COLORS[(index + colorPaletteOffset) % COLORS.length];
               const pct = totalValue > 0 ? ((Number(entry.value) / totalValue) * 100).toFixed(1) : '0';
@@ -769,11 +769,12 @@ export default function ManagerView({ currentUser }) {
                     alignItems: 'center', 
                     justifyContent: 'space-between', 
                     fontSize: '11px', 
-                    padding: '4px 6px', 
+                    padding: '5px 7px', 
                     borderRadius: '5px', 
                     backgroundColor: '#f8fafc',
                     border: '1px solid #f1f5f9',
-                    gap: '4px'
+                    gap: '4px',
+                    flexShrink: 0
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0, overflow: 'hidden', flex: 1 }}>
@@ -792,7 +793,7 @@ export default function ManagerView({ currentUser }) {
                         {Number(entry.amount).toLocaleString()}원
                       </span>
                     )}
-                    <span style={{ fontSize: '10px', color: '#64748b', backgroundColor: '#e2e8f0', padding: '1px 3px', borderRadius: '3px', fontWeight: 'bold' }}>
+                    <span style={{ fontSize: '10px', color: '#64748b', backgroundColor: '#e2e8f0', padding: '1px 4px', borderRadius: '3px', fontWeight: 'bold' }}>
                       {pct}%
                     </span>
                   </div>
