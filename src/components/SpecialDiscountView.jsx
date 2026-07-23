@@ -20,6 +20,9 @@ export const formatRate = (rateVal) => {
 };
 
 export default function SpecialDiscountView({ currentUser }) {
+  // 최고 관리자(admin / sysadmin) 전용 사유(reason) 필드 노출 권한 체크
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.is_sysadmin || currentUser?.isSysAdmin;
+
   const [dataList, setDataList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -290,22 +293,31 @@ export default function SpecialDiscountView({ currentUser }) {
       return;
     }
 
-    const headers = ['구분(유형)', '이름/기관명', '차트번호/대상', '할인구분', '할인율', '사유', '요청자', '요청일자', '시작일', '종료일', '상태', '연락처/담당자', '비고'];
-    const rows = dataList.map(item => [
-      item.target_type,
-      item.name,
-      `'${item.chart_no || ''}`,
-      item.category,
-      item.discount_rate,
-      (item.reason || '').replace(/\r?\n/g, ' '),
-      item.requester,
-      item.request_date || '',
-      item.start_date || '',
-      item.end_date || '',
-      item.status,
-      item.contact || '',
-      (item.notes || '').replace(/\r?\n/g, ' ')
-    ]);
+    const headers = isAdmin
+      ? ['구분(유형)', '이름/기관명', '차트번호/대상', '할인구분', '할인율', '사유', '요청자', '시작일', '종료일', '상태', '연락처/담당자', '비고']
+      : ['구분(유형)', '이름/기관명', '차트번호/대상', '할인구분', '할인율', '요청자', '시작일', '종료일', '상태', '연락처/담당자', '비고'];
+
+    const rows = dataList.map(item => {
+      const r = [
+        item.target_type,
+        item.name,
+        `'${item.chart_no || ''}`,
+        item.category,
+        item.discount_rate
+      ];
+      if (isAdmin) {
+        r.push((item.reason || '').replace(/\r?\n/g, ' '));
+      }
+      r.push(
+        item.requester,
+        item.start_date || '',
+        item.end_date || '',
+        item.status,
+        item.contact || '',
+        (item.notes || '').replace(/\r?\n/g, ' ')
+      );
+      return r;
+    });
 
     let csvContent = headers.join(',') + '\n';
     rows.forEach(row => {
@@ -673,7 +685,7 @@ export default function SpecialDiscountView({ currentUser }) {
                   <th onClick={() => handleSort('discount_rate')} style={{ cursor: 'pointer', whiteSpace: 'nowrap', minWidth: '90px' }}>
                     할인율 {sortField === 'discount_rate' ? (sortOrder === 'asc' ? '▲' : '▼') : '↕'}
                   </th>
-                  <th style={{ minWidth: '150px' }}>사유</th>
+                  {isAdmin && <th style={{ minWidth: '150px' }}>사유</th>}
                   <th style={{ whiteSpace: 'nowrap', minWidth: '100px' }}>요청자</th>
                   <th style={{ whiteSpace: 'nowrap', minWidth: '70px' }}>상태</th>
                   <th style={{ textAlign: 'center', whiteSpace: 'nowrap', minWidth: '160px' }}>관리</th>
@@ -738,9 +750,11 @@ export default function SpecialDiscountView({ currentUser }) {
                         </span>
                       )}
                     </td>
-                    <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
-                      {item.reason || '-'}
-                    </td>
+                    {isAdmin && (
+                      <td style={{ maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.reason}>
+                        {item.reason || '-'}
+                      </td>
+                    )}
                     <td style={{ color: '#475569', fontWeight: '500', whiteSpace: 'nowrap' }}>{item.requester || '-'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
                       <span className={`status-badge ${item.status === '활성' ? 'status-최종승인' : 'status-반려'}`} style={{ padding: '3px 8px', fontSize: '11px', whiteSpace: 'nowrap', display: 'inline-block' }}>
@@ -913,16 +927,18 @@ export default function SpecialDiscountView({ currentUser }) {
                   />
                 </div>
 
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">사유 / 배경</label>
-                  <input
-                    type="text"
-                    value={formData.reason}
-                    onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    placeholder=""
-                    className="form-input"
-                  />
-                </div>
+                {isAdmin && (
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">사유 / 배경</label>
+                    <input
+                      type="text"
+                      value={formData.reason}
+                      onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                      placeholder=""
+                      className="form-input"
+                    />
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label className="form-label">요청일자 / 등록일</label>
@@ -1066,7 +1082,7 @@ export default function SpecialDiscountView({ currentUser }) {
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {itemHistoryLogs.map((log) => (
+                  {itemHistoryLogs.filter(log => isAdmin || log.field_name !== '사유/배경').map((log) => (
                     <div 
                       key={log.id} 
                       style={{ 

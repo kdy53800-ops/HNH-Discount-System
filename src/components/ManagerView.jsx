@@ -1412,7 +1412,11 @@ export default function ManagerView({ currentUser }) {
                             [특별 감면 대상 매칭] {specialMatchInfo.target_type}: {specialMatchInfo.name}
                           </div>
                           <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>
-                            현재 신청인({reqType}) 적용 할인율: <strong style={{ color: '#059669', fontSize: '13.5px' }}>{formatRateVal(matchedRate)}</strong> {typeLabel} | 사유: {specialMatchInfo.reason || '미기재'} | 승인요청자: {specialMatchInfo.requester || '미기재'}
+                            현재 신청인({reqType}) 적용 할인율: <strong style={{ color: '#059669', fontSize: '13.5px' }}>{formatRateVal(matchedRate)}</strong> {typeLabel} 
+                            {(currentUser?.role === 'admin' || currentUser?.is_sysadmin || currentUser?.isSysAdmin) && (
+                              <> | 사유: {specialMatchInfo.reason || '미기재'}</>
+                            )}
+                            | 승인요청자: {specialMatchInfo.requester || '미기재'}
                           </div>
                         </div>
                       </div>
