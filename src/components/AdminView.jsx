@@ -46,6 +46,7 @@ export default function AdminView({ currentUser }) {
   const [statusLogs, setStatusLogs] = useState([]);
   const [editLogs, setEditLogs] = useState([]);
   const [accessLogs, setAccessLogs] = useState([]);
+  const [userNamesMap, setUserNamesMap] = useState({});
 
   // 정렬 상태
   const [sortField, setSortField] = useState('created_at');
