@@ -681,7 +681,7 @@ export default function SpecialDiscountView({ currentUser }) {
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder={formData.target_type === '개인' ? '예: 박언표' : '예: 신라대학교'}
+                    placeholder=""
                     required
                     className="form-input"
                   />
@@ -695,7 +695,7 @@ export default function SpecialDiscountView({ currentUser }) {
                     type="text"
                     value={formData.chart_no}
                     onChange={(e) => setFormData({ ...formData, chart_no: e.target.value })}
-                    placeholder={formData.target_type === '개인' ? '예: 102472' : '예: 임직원 및 직계가족'}
+                    placeholder=""
                     className="form-input"
                   />
                 </div>
@@ -706,7 +706,7 @@ export default function SpecialDiscountView({ currentUser }) {
                     type="text"
                     value={formData.discount_rate}
                     onChange={(e) => setFormData({ ...formData, discount_rate: e.target.value })}
-                    placeholder="예: 100%, 50%, 20%"
+                    placeholder=""
                     required
                     className="form-input"
                   />
@@ -724,7 +724,7 @@ export default function SpecialDiscountView({ currentUser }) {
                         type="text"
                         value={formData.discount_outpatient}
                         onChange={(e) => setFormData({ ...formData, discount_outpatient: e.target.value })}
-                        placeholder="예: 20%"
+                        placeholder=""
                         className="form-input"
                         style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
@@ -735,7 +735,7 @@ export default function SpecialDiscountView({ currentUser }) {
                         type="text"
                         value={formData.discount_inpatient}
                         onChange={(e) => setFormData({ ...formData, discount_inpatient: e.target.value })}
-                        placeholder="예: 10%"
+                        placeholder=""
                         className="form-input"
                         style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
@@ -746,7 +746,7 @@ export default function SpecialDiscountView({ currentUser }) {
                         type="text"
                         value={formData.discount_checkup}
                         onChange={(e) => setFormData({ ...formData, discount_checkup: e.target.value })}
-                        placeholder="예: 30%"
+                        placeholder=""
                         className="form-input"
                         style={{ fontSize: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}
                       />
@@ -775,7 +775,7 @@ export default function SpecialDiscountView({ currentUser }) {
                     type="text"
                     value={formData.requester}
                     onChange={(e) => setFormData({ ...formData, requester: e.target.value })}
-                    placeholder="예: 백선미 병원장님"
+                    placeholder=""
                     className="form-input"
                   />
                 </div>
@@ -786,7 +786,7 @@ export default function SpecialDiscountView({ currentUser }) {
                     type="text"
                     value={formData.reason}
                     onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-                    placeholder="예: 신라대학교 이사장님, OO기관 감면 협약 체결 건"
+                    placeholder=""
                     className="form-input"
                   />
                 </div>
@@ -819,7 +819,7 @@ export default function SpecialDiscountView({ currentUser }) {
                   <textarea
                     value={formData.notes}
                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    placeholder="원무팀 수납/접수 시 확인할 특이사항을 적어주세요. (예: 수납 시 신분증 확인 필수)"
+                    placeholder="원무팀 수납/접수 시 확인할 특이사항을 적어주세요."
                     className="form-textarea"
                     rows={2}
                   />
