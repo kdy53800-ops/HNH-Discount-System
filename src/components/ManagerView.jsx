@@ -141,6 +141,16 @@ export default function ManagerView({ currentUser }) {
 
   const fetchMasterData = async () => {
     try {
+      // 최신 사용자 이름 맵 구성
+      const { data: userData } = await supabase.from('users').select('email, name');
+      if (userData) {
+        const uMap = {};
+        userData.forEach(u => {
+          if (u.email && u.name) uMap[u.email] = u.name;
+        });
+        setUserNamesMap(uMap);
+      }
+
       const { data } = await supabase.from('clinic_departments').select('name').order('name');
       if (data) {
         const sortedDepts = [...data].sort((a, b) => 
@@ -291,10 +301,11 @@ export default function ManagerView({ currentUser }) {
 
     try {
       // 1. 조회 이력 access_logs 적재
+      const currentUserName = userNamesMap[currentUser.email] || currentUser.user_metadata.full_name;
       await supabase.from('access_logs').insert({
         request_id: req.id,
         accessed_by_email: currentUser.email,
-        accessed_by_name: currentUser.user_metadata.full_name,
+        accessed_by_name: currentUserName,
         action: '상세조회'
       });
 
@@ -341,7 +352,7 @@ export default function ManagerView({ currentUser }) {
     setModalLoading(true);
     try {
       const email = currentUser.email;
-      const userName = currentUser.user_metadata.full_name;
+      const userName = userNamesMap[email] || currentUser.user_metadata.full_name;
 
       // 1. 상태 변경 로그 등록
       const { error: logErr } = await supabase.from('request_status_logs').insert({
@@ -1383,7 +1394,7 @@ export default function ManagerView({ currentUser }) {
                       <div className="log-timeline">
                         {statusLogs.map(l => (
                           <div key={l.id} className="log-entry">
-                            <div className="log-meta">{formatDateTime(l.changed_at)} | {l.changed_by_name}</div>
+                            <div className="log-meta">{formatDateTime(l.changed_at)} | {userNamesMap[l.changed_by_email] || l.changed_by_name}</div>
                             <div className="log-msg">
                               상태 변경: <span className="highlight">'{l.from_status || '최초신청'}'</span> ➔ <span className="highlight">'{l.to_status}'</span>
                             </div>
@@ -1391,7 +1402,7 @@ export default function ManagerView({ currentUser }) {
                         ))}
                         {editLogs.map(l => (
                           <div key={l.id} className="log-entry">
-                            <div className="log-meta">{formatDateTime(l.edited_at)} | {l.edited_by_name}</div>
+                            <div className="log-meta">{formatDateTime(l.edited_at)} | {userNamesMap[l.edited_by_email] || l.edited_by_name}</div>
                             <div className="log-msg">
                               항목 <span className="highlight">[{getFieldKoreanName(l.field_name)}]</span> 수정: 
                               {l.field_name === 'discount_amount' ? (
@@ -1412,7 +1423,7 @@ export default function ManagerView({ currentUser }) {
                           <div key={l.id} className="log-entry">
                             <div className="log-meta">{formatDateTime(l.accessed_at)}</div>
                             <div className="log-msg">
-                              <span className="highlight">{l.accessed_by_name}</span> ({l.accessed_by_email}) 가 조회함
+                              <span className="highlight">{userNamesMap[l.accessed_by_email] || l.accessed_by_name}</span> ({l.accessed_by_email}) 가 조회함
                             </div>
                           </div>
                         ))}

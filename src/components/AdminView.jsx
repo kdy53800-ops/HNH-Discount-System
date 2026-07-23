@@ -125,6 +125,16 @@ export default function AdminView({ currentUser }) {
   // 진료과 + 감면사유 마스터 데이터 가져오기
   const fetchMasterData = async () => {
     try {
+      // 사용자 이름 맵 (email -> name) 구성
+      const { data: userData } = await supabase.from('users').select('email, name');
+      if (userData) {
+        const uMap = {};
+        userData.forEach(u => {
+          if (u.email && u.name) uMap[u.email] = u.name;
+        });
+        setUserNamesMap(uMap);
+      }
+
       const { data } = await supabase.from('clinic_departments').select('name').order('name');
       if (data) {
         const sortedDepts = [...data].sort((a, b) => 
@@ -211,10 +221,11 @@ export default function AdminView({ currentUser }) {
 
     try {
       // 1. 조회 감사 로그 (access_logs) 삽입
+      const currentUserName = userNamesMap[currentUser.email] || currentUser.user_metadata.full_name;
       await supabase.from('access_logs').insert({
         request_id: req.id,
         accessed_by_email: currentUser.email,
-        accessed_by_name: currentUser.user_metadata.full_name,
+        accessed_by_name: currentUserName,
         action: '상세조회'
       });
 
@@ -274,7 +285,7 @@ export default function AdminView({ currentUser }) {
     setModalLoading(true);
     try {
       const email = currentUser.email;
-      const userName = currentUser.user_metadata.full_name;
+      const userName = userNamesMap[email] || currentUser.user_metadata.full_name;
 
       // 1. 수정 이력 변경 사항 파악하여 로깅 준비
       const editRecords = [];
@@ -774,7 +785,7 @@ export default function AdminView({ currentUser }) {
                       <div className="log-timeline">
                         {statusLogs.map(l => (
                           <div key={l.id} className="log-entry">
-                            <div className="log-meta">{formatDateTime(l.changed_at)} | {l.changed_by_name} ({l.changed_by_email})</div>
+                            <div className="log-meta">{formatDateTime(l.changed_at)} | {userNamesMap[l.changed_by_email] || l.changed_by_name} ({l.changed_by_email})</div>
                             <div className="log-msg">
                               상태를 <span className="highlight">'{l.from_status || '최초신청'}'</span>에서 <span className="highlight">'{l.to_status}'</span>(으)로 변경
                             </div>
@@ -782,7 +793,7 @@ export default function AdminView({ currentUser }) {
                         ))}
                         {editLogs.map(l => (
                           <div key={l.id} className="log-entry">
-                            <div className="log-meta">{formatDateTime(l.edited_at)} | {l.edited_by_name} ({l.edited_by_email})</div>
+                            <div className="log-meta">{formatDateTime(l.edited_at)} | {userNamesMap[l.edited_by_email] || l.edited_by_name} ({l.edited_by_email})</div>
                             <div className="log-msg">
                               항목 <span className="highlight">[{getFieldKoreanName(l.field_name)}]</span> 수정: 
                               {l.field_name === 'discount_amount' ? (
@@ -806,7 +817,7 @@ export default function AdminView({ currentUser }) {
                           <div key={l.id} className="log-entry">
                             <div className="log-meta">{formatDateTime(l.accessed_at)}</div>
                             <div className="log-msg">
-                              <span className="highlight">{l.accessed_by_name}</span> ({l.accessed_by_email}) 가 신청서 정보를 상세 조회함
+                              <span className="highlight">{userNamesMap[l.accessed_by_email] || l.accessed_by_name}</span> ({l.accessed_by_email}) 가 신청서 정보를 상세 조회함
                             </div>
                           </div>
                         ))}
