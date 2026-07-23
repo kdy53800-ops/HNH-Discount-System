@@ -113,7 +113,7 @@ CREATE TABLE special_discounts (
     target_type text NOT NULL DEFAULT '개인' CHECK (target_type IN ('개인', '기관/단체')),
     name text NOT NULL,                -- 이름 또는 기관/단체명
     chart_no text,                     -- 차트번호(병록번호) 또는 적용 대상 범위
-    category text NOT NULL DEFAULT '전체', -- 구분 (전체, 외래, 입원, 검진 등)
+    category text NOT NULL DEFAULT '급여포함', -- 적용 구분 ('급여포함', '비급여만')
     discount_rate text NOT NULL,       -- 통합/대표 할인율 (예: 100%, 50% 등)
     discount_outpatient text,          -- 외래 진료 할인율 (예: 20%)
     discount_inpatient text,           -- 입원 진료 할인율 (예: 10%)
