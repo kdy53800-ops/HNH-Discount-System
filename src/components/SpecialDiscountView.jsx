@@ -254,7 +254,7 @@ export default function SpecialDiscountView({ currentUser }) {
     const processWorkbook = (workbook) => {
       try {
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rawJson = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+        const rawJson = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '', raw: false });
 
         if (!rawJson || rawJson.length === 0) {
           alert('파일에 데이터가 존재하지 않습니다.');
@@ -612,8 +612,16 @@ export default function SpecialDiscountView({ currentUser }) {
                     <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{item.name}</td>
                     <td style={{ color: '#0284c7', fontWeight: '600' }}>{item.chart_no || '-'}</td>
                     <td>
-                      <span className="status-badge status-신청완료" style={{ padding: '2px 6px', fontSize: '11px' }}>
-                        {item.category || '전체'}
+                      <span style={{ 
+                        fontSize: '11px', 
+                        padding: '3px 8px', 
+                        borderRadius: '6px', 
+                        fontWeight: 'bold',
+                        backgroundColor: item.category === '비급여만' ? '#ffedd5' : (item.category === '급여포함' ? '#dcfce7' : '#f1f5f9'),
+                        color: item.category === '비급여만' ? '#c2410c' : (item.category === '급여포함' ? '#15803d' : '#475569'),
+                        border: item.category === '비급여만' ? '1px solid #fed7aa' : (item.category === '급여포함' ? '1px solid #bbf7d0' : '1px solid #e2e8f0')
+                      }}>
+                        {item.category || '급여포함'}
                       </span>
                     </td>
                     <td>
