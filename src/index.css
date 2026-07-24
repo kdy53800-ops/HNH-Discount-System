@@ -290,8 +290,8 @@ body {
   background: rgba(0, 70, 128, 0.05);
 }
 
-/* 반응형 모바일/태블릿 헤더 메뉴 */
-@media screen and (max-width: 1024px) {
+/* 반응형 모바일/태블릿 헤더 메뉴 (1280px 이하에서 햄버거 메뉴 전환) */
+@media screen and (max-width: 1280px) {
   .app-header {
     padding: 10px 16px;
     flex-direction: column;
