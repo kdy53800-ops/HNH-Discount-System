@@ -302,10 +302,15 @@ export default function App() {
           <button 
             className="mobile-menu-btn" 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="메뉴 열기/닫기"
           >
-            ☰
+            {isMobileMenuOpen ? '✕' : '☰'}
           </button>
         </div>
+
+        {isMobileMenuOpen && (
+          <div className="nav-popover-backdrop" onClick={() => setIsMobileMenuOpen(false)} />
+        )}
 
         <div className={`header-nav-container ${isMobileMenuOpen ? 'open' : ''}`}>
           {/* 권한별 상단 탭 노출 */}
